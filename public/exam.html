@@ -521,6 +521,12 @@
       background: #e8f0f8;
     }
 
+    .match-option.selected {
+      background: #123961 !important;
+      color: #fff;
+      border-color: #123961;
+    }
+
     .match-option.used {
       opacity: 0.35;
       cursor: default;
@@ -1332,10 +1338,37 @@
       return html;
     }
 
-    // ─── Match drag-and-drop ──────────────────────────────────────────────────────
+    // ─── Match drag-and-drop & Two-step click ─────────────────────────────────────
     let _dragQid = null;
     let _dragLetter = null;
-    let _dragFromSlot = null; // slot key if dragging from assigned slot
+    let _dragFromSlot = null;
+    let _matchSelectedOption = null; // { qId, letter }
+
+    function selectMatchOption(qId, letter) {
+      if (_matchSelectedOption && _matchSelectedOption.qId === qId && _matchSelectedOption.letter === letter) {
+        _matchSelectedOption = null;
+      } else {
+        _matchSelectedOption = { qId, letter };
+      }
+      renderQuestion();
+    }
+
+    function assignToSlot(qId, key) {
+      if (!_matchSelectedOption || _matchSelectedOption.qId !== qId) return;
+
+      if (!answers[qId]) answers[qId] = {};
+
+      const letter = _matchSelectedOption.letter;
+      // If this letter is already in another slot for this question, clear that slot
+      for (const k in answers[qId]) {
+        if (answers[qId][k] === letter) delete answers[qId][k];
+      }
+
+      answers[qId][key] = letter;
+      _matchSelectedOption = null;
+      markUnsaved(qId);
+      renderQuestion();
+    }
 
     function onMatchDragStart(e, qId, letter, fromSlot) {
       _dragQid = qId;
@@ -1403,11 +1436,13 @@
         const rightItem = assigned ? right.find(r => r.charAt(0) === assigned) : null;
         html += `
       <div class="match-assigned${assigned ? ' has-value' : ''}" id="slot-${q.id}-${key}"
+           onclick="assignToSlot(${q.id}, '${key}')"
            ondragover="onSlotDragOver(event, this)"
            ondragleave="onSlotDragLeave(this)"
-           ondrop="onSlotDrop(event, ${q.id}, '${key}')">
+           ondrop="onSlotDrop(event, ${q.id}, '${key}')"
+           style="cursor: pointer;">
         <span>${rightItem ? escHtml(rightItem) : '<span style="color:#bbb">—</span>'}</span>
-        ${assigned ? `<button class="match-remove" onclick="removeMatch(${q.id}, '${key}')">✕</button>` : ''}
+        ${assigned ? `<button class="match-remove" onclick="event.stopPropagation(); removeMatch(${q.id}, '${key}')">✕</button>` : ''}
       </div>`;
       });
       html += '</div>';
@@ -1418,11 +1453,12 @@
       shuffledRight.forEach((opt) => {
         const letter = opt.charAt(0);
         const isUsed = usedRight.has(letter);
-        html += `<button class="match-option${isUsed ? ' used' : ''}"
+        const isSelected = _matchSelectedOption && _matchSelectedOption.qId === q.id && _matchSelectedOption.letter === letter;
+        html += `<button class="match-option${isUsed ? ' used' : ''}${isSelected ? ' selected' : ''}"
           draggable="${isUsed ? 'false' : 'true'}"
           ondragstart="onMatchDragStart(event, ${q.id}, '${letter}')"
           ondragend="onMatchDragEnd(event)"
-          onclick="assignMatch(${q.id}, '${letter}')">${escHtml(opt)}</button>`;
+          onclick="selectMatchOption(${q.id}, '${letter}')">${escHtml(opt)}</button>`;
       });
       html += '</div></div></div>';
 
@@ -1433,7 +1469,7 @@
       </button>
       <span class="save-feedback" id="saveFeedback">✓ Відповідь збережено</span>
     </div>`;
-      html += `<div style="font-size:12px;color:#888;margin-top:8px;">Перетягніть до слота або натисніть — призначить відповідність.</div>`;
+      html += `<div style="font-size:12px;color:#888;margin-top:8px;">Оберіть варіант і натисніть на комірку, або просто перетягніть.</div>`;
 
       return html;
     }

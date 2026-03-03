@@ -12,13 +12,20 @@ const config = require('./config.json');
 const SQLiteStore = ConnectSQLite3(session);
 const app = express();
 
+const DATA_DIR = path.join(__dirname, 'data');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+[DATA_DIR, UPLOADS_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+});
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.db', dir: __dirname }),
+  store: new SQLiteStore({ db: 'sessions.db', dir: DATA_DIR }),
   secret: 'kse-nmt-secret-2026',
   resave: false,
   saveUninitialized: false,
@@ -27,7 +34,7 @@ app.use(session({
 
 // ─── Multer: Single question image (legacy) ───────────────────────────────────
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, 'public', 'uploads'),
+  destination: UPLOADS_DIR,
   filename: (req, file, cb) => {
     cb(null, `q_${req.params.id}.png`);
   }
@@ -36,7 +43,7 @@ const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // ─── Multer: Multiple question images ────────────────────────────────────────
 const qMultiStorage = multer.diskStorage({
-  destination: path.join(__dirname, 'public', 'uploads'),
+  destination: UPLOADS_DIR,
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.png';
     cb(null, `q_${req.params.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${ext}`);
@@ -46,7 +53,7 @@ const qMultiUpload = multer({ storage: qMultiStorage, limits: { fileSize: 10 * 1
 
 // ─── Multer: Reference materials ─────────────────────────────────────────────
 const refStorage = multer.diskStorage({
-  destination: path.join(__dirname, 'public', 'uploads'),
+  destination: UPLOADS_DIR,
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || '.png';
     cb(null, `ref_${Date.now()}_${Math.random().toString(36).slice(2, 6)}${ext}`);

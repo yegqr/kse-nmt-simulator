@@ -1,7 +1,12 @@
-const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'exam.db');
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const DB_PATH = path.join(DATA_DIR, 'exam.db');
 const db = new sqlite3.Database(DB_PATH);
 
 function init() {
@@ -277,28 +282,28 @@ function seedQuestions() {
       text: 'Установіть відповідність між реченням і видом підрядного речення.',
       match_left: JSON.stringify(['1. Він знав, що треба поспішати.', '2. Місто, де я народився, дуже красиве.', '3. Вона прийшла, коли всі вже сіли.', '4. Він навчався так, щоб отримати відзнаку.']),
       match_right: JSON.stringify(['А. підрядне означальне', 'Б. підрядне обставинне часу', 'В. підрядне з\'ясувальне', 'Г. підрядне обставинне мети']),
-      correct: JSON.stringify({'1':'В','2':'А','3':'Б','4':'Г'})
+      correct: JSON.stringify({ '1': 'В', '2': 'А', '3': 'Б', '4': 'Г' })
     },
     {
       order: 27, type: 'match',
       text: 'Установіть відповідність між словом і частиною мови.',
       match_left: JSON.stringify(['1. читаючи', '2. прочитавши', '3. читання', '4. прочитаний']),
       match_right: JSON.stringify(['А. дієприкметник', 'Б. іменник', 'В. дієприслівник недоконаного виду', 'Г. дієприслівник доконаного виду']),
-      correct: JSON.stringify({'1':'В','2':'Г','3':'Б','4':'А'})
+      correct: JSON.stringify({ '1': 'В', '2': 'Г', '3': 'Б', '4': 'А' })
     },
     {
       order: 28, type: 'match',
       text: 'Установіть відповідність між фразеологізмом і його значенням.',
       match_left: JSON.stringify(['1. Бити байдики', '2. Пекти раків', '3. Мотати на вус', '4. Дивитися крізь пальці']),
       match_right: JSON.stringify(['А. червоніти від сорому', 'Б. ледарювати', 'В. не звертати уваги', 'Г. запам\'ятовувати, брати до уваги']),
-      correct: JSON.stringify({'1':'Б','2':'А','3':'Г','4':'В'})
+      correct: JSON.stringify({ '1': 'Б', '2': 'А', '3': 'Г', '4': 'В' })
     },
     {
       order: 29, type: 'match',
       text: 'Установіть відповідність між словом і способом його творення.',
       match_left: JSON.stringify(['1. безстрашний', '2. читач', '3. синьо-жовтий', '4. перечитати']),
       match_right: JSON.stringify(['А. складання основ', 'Б. суфіксальний', 'В. префіксальний', 'Г. префіксально-суфіксальний']),
-      correct: JSON.stringify({'1':'Г','2':'Б','3':'А','4':'В'})
+      correct: JSON.stringify({ '1': 'Г', '2': 'Б', '3': 'А', '4': 'В' })
     },
     // Q30: Відкрита відповідь (одне питання)
     {
@@ -408,21 +413,21 @@ function seedQuestions() {
       text: 'Установіть відповідність між функцією та її похідною.',
       match_left: JSON.stringify(['1. f(x) = x³', '2. f(x) = sin(x)', '3. f(x) = eˣ', '4. f(x) = ln(x)']),
       match_right: JSON.stringify(['А. f\'(x) = 1/x', 'Б. f\'(x) = 3x²', 'В. f\'(x) = eˣ', 'Г. f\'(x) = cos(x)']),
-      correct: JSON.stringify({'1':'Б','2':'Г','3':'В','4':'А'})
+      correct: JSON.stringify({ '1': 'Б', '2': 'Г', '3': 'В', '4': 'А' })
     },
     {
       order: 17, type: 'match',
       text: 'Установіть відповідність між фігурою та формулою її площі.',
       match_left: JSON.stringify(['1. Трикутник', '2. Коло', '3. Трапеція', '4. Ромб']),
       match_right: JSON.stringify(['А. S = πr²', 'Б. S = (a + b)·h / 2', 'В. S = a·h / 2', 'Г. S = d₁·d₂ / 2']),
-      correct: JSON.stringify({'1':'В','2':'А','3':'Б','4':'Г'})
+      correct: JSON.stringify({ '1': 'В', '2': 'А', '3': 'Б', '4': 'Г' })
     },
     {
       order: 18, type: 'match',
       text: 'Установіть відповідність між виразом та його значенням.',
       match_left: JSON.stringify(['1. sin(90°)', '2. cos(180°)', '3. tg(60°)', '4. sin(30°)']),
       match_right: JSON.stringify(['А. −1', 'Б. 1/2', 'В. 1', 'Г. √3']),
-      correct: JSON.stringify({'1':'В','2':'А','3':'Г','4':'Б'})
+      correct: JSON.stringify({ '1': 'В', '2': 'А', '3': 'Г', '4': 'Б' })
     },
     // Q19-22: Відкрита відповідь (коротка)
     {
