@@ -199,7 +199,7 @@ app.post('/api/exam/start', requireParticipant, (req, res) => {
       (err, existing) => {
         if (existing) {
           const totalSec = config.exam.duration_minutes * 60;
-          const startedMs = new Date(existing.started_at.replace(' ', 'T') + '+02:00').getTime();
+          const startedMs = new Date(existing.started_at.replace(' ', 'T') + 'Z').getTime();
           const elapsed = Math.floor((Date.now() - startedMs) / 1000);
           const remaining = Math.max(0, totalSec - elapsed);
           return res.json({ session_id: existing.id, time_remaining_seconds: remaining, started_at: existing.started_at });
@@ -226,7 +226,7 @@ app.post('/api/exam/start', requireParticipant, (req, res) => {
     const totalSec = config.exam.duration_minutes * 60;
 
     db.run(
-      `INSERT INTO exam_sessions (id, participant_id, started_at, time_remaining_seconds, status) VALUES (?, ?, datetime('now','localtime'), ?, 'active')`,
+      `INSERT INTO exam_sessions (id, participant_id, started_at, time_remaining_seconds, status) VALUES (?, ?, datetime('now'), ?, 'active')`,
       [sessionId, p.id, totalSec],
       (err) => {
         if (err) return res.status(500).json({ error: 'Помилка створення сесії' });
@@ -249,7 +249,7 @@ app.get('/api/exam/session', requireParticipant, (req, res) => {
       if (s.status === 'active') {
         // Always calculate from wall-clock: totalDuration - elapsed since start
         const totalSec = config.exam.duration_minutes * 60;
-        const startedMs = new Date(s.started_at.replace(' ', 'T') + '+02:00').getTime();
+        const startedMs = new Date(s.started_at.replace(' ', 'T') + 'Z').getTime();
         const elapsed = Math.floor((Date.now() - startedMs) / 1000);
         remaining = Math.max(0, totalSec - elapsed);
       }
@@ -303,7 +303,7 @@ app.post('/api/exam/answer', requireParticipant, (req, res) => {
 
       db.run(
         `INSERT INTO answers (session_id, question_id, answer, saved_at, time_spent_seconds)
-         VALUES (?, ?, ?, datetime('now','localtime'), ?)
+         VALUES (?, ?, ?, datetime('now'), ?)
          ON CONFLICT(session_id, question_id) DO UPDATE SET
            answer = excluded.answer,
            saved_at = excluded.saved_at,
@@ -394,7 +394,7 @@ app.post('/api/exam/finish', requireParticipant, (req, res) => {
             }
 
             db.run(
-              `UPDATE exam_sessions SET status = 'finished', finished_at = datetime('now','localtime'), score_ukrainian = ?, score_math = ? WHERE id = ?`,
+              `UPDATE exam_sessions SET status = 'finished', finished_at = datetime('now'), score_ukrainian = ?, score_math = ? WHERE id = ?`,
               [scoreUkr, scoreMath, session_id],
               (err4) => {
                 if (err4) return res.status(500).json({ error: err4.message });
