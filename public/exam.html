@@ -1345,10 +1345,30 @@
     let _matchSelectedOption = null; // { qId, letter }
 
     function selectMatchOption(qId, letter) {
+      if (!answers[qId]) answers[qId] = {};
+      const current = answers[qId];
+
       if (_matchSelectedOption && _matchSelectedOption.qId === qId && _matchSelectedOption.letter === letter) {
         _matchSelectedOption = null;
-      } else {
-        _matchSelectedOption = { qId, letter };
+        renderQuestion();
+        return;
+      }
+
+      _matchSelectedOption = { qId, letter };
+
+      // Auto-assign to FIRST FREE slot if not already assigned
+      let already = Object.values(current).includes(letter);
+      if (!already) {
+        const qObj = questions.find(qx => qx.id === qId);
+        const lCount = JSON.parse(qObj.match_left || '[]').length;
+        for (let i = 1; i <= lCount; i++) {
+          const key = String(i);
+          if (!current[key]) {
+            current[key] = letter;
+            markUnsaved(qId);
+            break;
+          }
+        }
       }
       renderQuestion();
     }
@@ -1357,9 +1377,9 @@
       if (!_matchSelectedOption || _matchSelectedOption.qId !== qId) return;
 
       if (!answers[qId]) answers[qId] = {};
-
       const letter = _matchSelectedOption.letter;
-      // If this letter is already in another slot for this question, clear that slot
+
+      // Move: Clear from any other slot first
       for (const k in answers[qId]) {
         if (answers[qId][k] === letter) delete answers[qId][k];
       }
