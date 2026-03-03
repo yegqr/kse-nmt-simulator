@@ -1412,6 +1412,18 @@
       slotEl.classList.remove('drag-over');
     }
 
+    const shuffledCache = {};
+    function getShuffledRight(qId, rightOpts) {
+      if (shuffledCache[qId]) return shuffledCache[qId];
+      const arr = [...rightOpts];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      shuffledCache[qId] = arr;
+      return arr;
+    }
+
     function onSlotDrop(e, qId, key) {
       e.preventDefault();
       const slotEl = e.currentTarget;
@@ -1541,22 +1553,12 @@
       markUnsaved(qId);
     }
 
-    function assignMatch(qId, letter) {
-      if (!answers[qId]) answers[qId] = {};
-      const q = questions.find(q => q.id === qId);
-      const left = JSON.parse(q.match_left || '[]');
-      for (let i = 0; i < left.length; i++) {
-        const key = String(i + 1);
-        if (!answers[qId][key]) { answers[qId][key] = letter; break; }
-      }
-      markUnsaved(qId);
-      renderQuestion();
-    }
-
     function removeMatch(qId, key) {
-      if (answers[qId]) delete answers[qId][key];
-      markUnsaved(qId);
-      renderQuestion();
+      if (answers[qId]) {
+        delete answers[qId][key];
+        markUnsaved(qId);
+        renderQuestion();
+      }
     }
 
     function markUnsaved(qId) {
