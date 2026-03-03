@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSE НМТ — Адміністратор</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .login-box {
+      background: #fff;
+      border-radius: 8px;
+      padding: 40px 36px;
+      width: 340px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .login-box h2 {
+      font-size: 20px;
+      color: #123961;
+      margin-bottom: 24px;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .login-box input:focus {
+      outline: none;
+      border-color: #123961;
+    }
+
+    .btn-admin-login {
+      width: 100%;
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 11px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-admin-login:hover {
+      background: #0f1a2e;
+    }
+
+    .admin-login-err {
+      color: #123961;
+      font-size: 13px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 210px;
+      background: #123961;
+      color: #fff;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-logo {
+      padding: 16px 18px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo img {
+      height: 36px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .sidebar-logo-text .main {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .sidebar-logo-text .sub {
+      font-size: 9px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 0;
+    }
+
+    .nav-item {
+      padding: 12px 18px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #bbb;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .nav-item:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-item.active {
+      color: #fff;
+      border-left-color: #123961;
+      background: rgba(255, 255, 255, 0.08);
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-logout-admin {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ccc;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .btn-logout-admin:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    h2.page-title {
+      font-size: 22px;
+      color: #123961;
+      margin-bottom: 20px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 6px;
+      padding: 20px 24px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    .stat-card .val {
+      font-size: 36px;
+      font-weight: 700;
+      color: #123961;
+    }
+
+    .stat-card .lbl {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+    }
+
+    thead tr {
+      background: #123961;
+      color: #fff;
+    }
+
+    th {
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #333;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    tr:hover td {
+      background: #fafafa;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-active {
+      background: #e3fcef;
+      color: #1e8449;
+    }
+
+    .badge-finished {
+      background: #eaf0fb;
+      color: #1a5276;
+    }
+
+    .badge-inactive {
+      background: #f5f5f5;
+      color: #888;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: #123961;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0d2d4a;
+    }
+
+    .btn-secondary {
+      background: #123961;
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background: #0f1a2e;
+    }
+
+    .btn-danger {
+      background: #e74c3c;
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #123961;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 9px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #123961;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    .card h3 {
+      font-size: 16px;
+      color: #123961;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .filter-row input,
+    .filter-row select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .msg {
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    .msg.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .msg.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 8px;
+      padding: 28px;
+      max-width: 640px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-box h3 {
+      font-size: 18px;
+      color: #123961;
+      margin-bottom: 20px;
+    }
+
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #888;
+    }
+
+    .modal-footer {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .q-type-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      background: #eaf0fb;
+      color: #1a5276;
+    }
+
+    .detail-answer {
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .detail-correct {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .detail-wrong {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .detail-empty {
+      background: #f5f5f5;
+      color: #888;
+    }
+
+    .clickable {
+      cursor: pointer;
+    }
+
+    .clickable:hover {
+      color: #123961;
+      text-decoration: underline;
+    }
+
+    /* Toggle switch */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 0;
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 54px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #ccc;
+      border-radius: 28px;
+      transition: .3s;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background: white;
+      border-radius: 50%;
+      transition: .3s;
+    }
+
+    input:checked+.toggle-slider {
+      background: #27ae60;
+    }
+
+    input:checked+.toggle-slider:before {
+      transform: translateX(26px);
+    }
+
+    .toggle-label {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .toggle-label.enabled {
+      color: #27ae60;
+    }
+
+    .toggle-label.disabled {
+      color: #123961;
+    }
+
+    /* Ref materials */
+    .ref-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-top: 12px;
+    }
+
+    .ref-item {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ref-item img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+    }
+
+    .ref-item .ref-item-info {
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .ref-item .ref-item-title {
+      font-weight: 600;
+      color: #123961;
+      margin-bottom: 2px;
+    }
+
+    .ref-item .ref-item-subj {
+      color: #888;
+      font-size: 11px;
+    }
+
+    .ref-item .ref-item-del {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(192, 57, 43, 0.85);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .ref-item .ref-item-del:hover {
+      background: #0d2d4a;
+    }
+
+    /* Existing q images */
+    .q-img-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .q-img-thumb {
+      position: relative;
+    }
+
+    .q-img-thumb img {
+      height: 70px;
+      width: 70px;
+      object-fit: cover;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .q-img-del {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Admin Login -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+      <h2>Адміністратор</h2>
+      <form onsubmit="event.preventDefault(); doAdminLogin();" autocomplete="off">
+        <input type="text" id="adminLogin" placeholder="Логін" autocomplete="off" spellcheck="false">
+        <input type="password" id="adminPassword" placeholder="Пароль" autocomplete="off">
+        <button type="submit" class="btn-admin-login">Увійти</button>
+      </form>
+      <div class="admin-login-err" id="adminLoginErr">Невірний логін або пароль</div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="app">
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <img src="/KSE_Logo.png" alt="KSE"
+          onerror="this.style.display='none'; document.getElementById('adminLogoFallback').style.display='flex'">
+        <div id="adminLogoFallback" style="display:none; flex-direction:column;">
+          <span style="font-size:18px; font-weight:700; color:#fff;">KSE</span>
+          <span style="font-size:9px; color:#aaa; text-transform:uppercase;">Kyiv School of Economics</span>
+        </div>
+        <div class="sidebar-logo-text">
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard')">📊 Dashboard</div>
+        <div class="nav-item" data-tab="participants" onclick="showTab('participants')">👥 Учасники</div>
+        <div class="nav-item" data-tab="results" onclick="showTab('results')">📋 Результати</div>
+        <div class="nav-item" data-tab="questions" onclick="showTab('questions')">❓ Питання</div>
+        <div class="nav-item" data-tab="materials" onclick="showTab('materials')">📚 Матеріали</div>
+        <div class="nav-item" data-tab="logs" onclick="showTab('logs')">📝 Логи</div>
+        <div class="nav-item" data-tab="export" onclick="showTab('export')">⬇ Експорт</div>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout-admin" onclick="doAdminLogout()">Вийти</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="tab-panel active" id="tab-dashboard">
+        <h2 class="page-title">Dashboard</h2>
+
+        <!-- Test Access Toggle -->
+        <div class="card" style="margin-bottom:20px;">
+          <h3>Доступ до тесту</h3>
+          <div class="toggle-wrap">
+            <label class="toggle-switch">
+              <input type="checkbox" id="accessToggle" onchange="toggleTestAccess(this.checked)">
+              <span class="toggle-slider"></span>
+            </label>
+            <span class="toggle-label disabled" id="accessLabel">Тест ЗАКРИТО — учасники не можуть почати</span>
+          </div>
+          <p style="font-size:12px;color:#888;">Увімкніть перемикач, щоб дозволити учасникам розпочати тест.</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="val" id="statTotal">—</div>
+            <div class="lbl">Зареєстровано</div>
+          </div>
+          <div class="stat-card">
+            <div class="val" id="statActive">—</div>
+            <div class="lbl">Активних зараз</div>
+          </div>
+          <div class="stat-card">
+            <div class="val" id="statFinished">—</div>
+            <div class="lbl">Завершили</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Всі учасники</h3>
+          <table id="dashTable">
+            <thead>
+              <tr>
+                <th>Місце</th>
+                <th>ПІБ</th>
+                <th>Логін</th>
+                <th>Статус</th>
+                <th>Результат</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Participants -->
+      <div class="tab-panel" id="tab-participants">
+        <h2 class="page-title">Учасники</h2>
+        <div class="msg" id="participantMsg"></div>
+
+        <div class="card">
+          <h3>Додати учасника</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Логін</label><input type="text" id="pLogin" placeholder="01001"></div>
+            <div class="form-group"><label>Пароль</label><input type="text" id="pPassword" placeholder="Пароль"></div>
+            <div class="form-group" style="flex:1"><label>ПІБ</label><input type="text" id="pFullName"
+                placeholder="Прізвище Ім'я По батькові"></div>
+            <div class="form-group"><label>Місце №</label><input type="number" id="pSeat" placeholder="1"
+                style="width:80px"></div>
+            <button class="btn btn-primary" onclick="addParticipant()">Додати</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Імпорт CSV</h3>
+          <p style="font-size:13px;color:#666;margin-bottom:12px;">Формат: login,password,full_name,seat_number</p>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input type="file" id="csvFile" accept=".csv" style="font-size:13px;">
+            <button class="btn btn-secondary" onclick="importCSV()">Імпортувати</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Список учасників</h3>
+          <table id="participantsTable">
+            <thead>
+              <tr>
+                <th>№</th>
+                <th>Місце</th>
+                <th>ПІБ</th>
+                <th>Логін</th>
+                <th>Пароль</th>
+                <th>Статус</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="tab-panel" id="tab-results">
+        <h2 class="page-title">Результати</h2>
+        <div class="card" id="resultsListCard">
+          <h3>Завершені тести</h3>
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th>ПІБ</th>
+                <th>Логін</th>
+                <th>Місце</th>
+                <th>Початок</th>
+                <th>Кінець</th>
+                <th>Тривалість</th>
+                <th>Укр</th>
+                <th>Мат</th>
+                <th>Всього</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="card" id="resultDetailCard" style="display:none;">
+          <h3>
+            <button
+              onclick="document.getElementById('resultDetailCard').style.display='none'; document.getElementById('resultsListCard').style.display='block';"
+              style="background:none;border:none;cursor:pointer;color:#123961;font-size:14px;margin-right:10px;">←
+              Назад</button>
+            Деталі: <span id="detailParticipantName"></span>
+          </h3>
+          <div id="detailContent"></div>
+        </div>
+      </div>
+
+      <!-- Questions -->
+      <div class="tab-panel" id="tab-questions">
+        <h2 class="page-title">Питання</h2>
+        <div style="margin-bottom:14px;">
+          <button class="btn btn-primary" onclick="openAddQuestion()">+ Додати питання</button>
+        </div>
+        <div class="card">
+          <table id="questionsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Предмет</th>
+                <th>#</th>
+                <th>Тип</th>
+                <th>Текст</th>
+                <th>Фото</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reference Materials -->
+      <div class="tab-panel" id="tab-materials">
+        <h2 class="page-title">Довідкові матеріали</h2>
+        <div class="msg" id="materialsMsg"></div>
+
+        <div class="card">
+          <h3>Додати матеріал</h3>
+          <div class="form-row" style="align-items:flex-start;">
+            <div class="form-group">
+              <label>Предмет</label>
+              <select id="matSubject">
+                <option value="math">Математика</option>
+                <option value="ukrainian">Українська мова</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex:1;">
+              <label>Назва / підпис (необов'язково)</label>
+              <input type="text" id="matTitle" placeholder="Наприклад: Таблиця тригонометрії">
+            </div>
+            <div class="form-group">
+              <label>Порядок №</label>
+              <input type="number" id="matOrder" value="0" style="width:80px">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label>Фотографії (можна вибрати кілька)</label>
+            <input type="file" id="matImages" accept="image/*" multiple style="font-size:13px; margin-top:4px;">
+          </div>
+          <button class="btn btn-primary" onclick="addMaterial()">Додати матеріал</button>
+        </div>
+
+        <div class="card">
+          <h3>Список матеріалів</h3>
+          <div class="filter-row">
+            <select id="matFilterSubj" onchange="loadMaterials()">
+              <option value="">Усі предмети</option>
+              <option value="math">Математика</option>
+              <option value="ukrainian">Українська мова</option>
+            </select>
+          </div>
+          <div id="materialsList">
+            <p style="color:#aaa;font-size:13px;">Завантаження...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs -->
+      <div class="tab-panel" id="tab-logs">
+        <h2 class="page-title">Журнал подій</h2>
+        <div class="filter-row">
+          <input type="text" id="logFilterParticipant" placeholder="ID учасника">
+          <select id="logFilterEvent">
+            <option value="">Всі події</option>
+            <option value="login">login</option>
+            <option value="exam_start">exam_start</option>
+            <option value="answer_save">answer_save</option>
+            <option value="test_submit">test_submit</option>
+          </select>
+          <button class="btn btn-secondary" onclick="loadLogs()">Фільтрувати</button>
+        </div>
+        <table id="logsTable">
+          <thead>
+            <tr>
+              <th>Час</th>
+              <th>Учасник</th>
+              <th>Подія</th>
+              <th>Дані</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Export -->
+      <div class="tab-panel" id="tab-export">
+        <h2 class="page-title">Експорт даних</h2>
+        <div class="card">
+          <h3>Результати учасників</h3>
+          <p style="font-size:13px;color:#666;margin-bottom:16px;">CSV з результатами (UTF-8 BOM для Excel).</p>
+          <a href="/api/admin/export/csv" class="btn btn-primary">⬇ Завантажити CSV</a>
+        </div>
+        <div class="card">
+          <h3>Активні сесії</h3>
+          <button class="btn btn-secondary" onclick="loadActiveSessions()">Оновити</button>
+          <table id="activeSessionsTable" style="margin-top:14px;">
+            <thead>
+              <tr>
+                <th>ПІБ</th>
+                <th>Логін</th>
+                <th>Місце</th>
+                <th>Початок</th>
+                <th>Залишилось (с)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Question modal -->
+  <div class="modal-overlay" id="questionModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeQuestionModal()">✕</button>
+      <h3 id="questionModalTitle">Редагувати питання</h3>
+      <input type="hidden" id="qModalId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Предмет</label>
+          <select id="qModalSubject">
+            <option value="ukrainian">Українська мова</option>
+            <option value="math">Математика</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Порядок №</label>
+          <input type="number" id="qModalOrder" style="width:80px">
+        </div>
+        <div class="form-group">
+          <label>Тип</label>
+          <select id="qModalType" onchange="toggleMatchFields()">
+            <option value="single">single</option>
+            <option value="multiple">multiple</option>
+            <option value="match">match</option>
+            <option value="open">open</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Балів</label>
+          <input type="number" id="qModalPoints" value="1" style="width:70px">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Інструкція (необов'язково)</label>
+        <input type="text" id="qModalInstruction">
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Текст питання</label>
+        <textarea id="qModalText" rows="4" style="width:100%;font-size:13px;"></textarea>
+      </div>
+      <div id="optionsSection">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Варіанти відповідей (JSON масив)</label>
+          <textarea id="qModalOptions" rows="3" style="width:100%;font-size:12px;"
+            placeholder='["А) варіант1", "Б) варіант2", "В) варіант3", "Г) варіант4"]'></textarea>
+        </div>
+      </div>
+      <div id="matchSection" style="display:none;">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Ліва колонка (JSON масив)</label>
+          <textarea id="qModalMatchLeft" rows="3" style="width:100%;font-size:12px;"
+            placeholder='["1. ...", "2. ...", "3. ...", "4. ..."]'></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>Права колонка (JSON масив)</label>
+          <textarea id="qModalMatchRight" rows="3" style="width:100%;font-size:12px;"
+            placeholder='["А. ...", "Б. ...", "В. ...", "Г. ..."]'></textarea>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Правильна відповідь</label>
+        <input type="text" id="qModalCorrect" placeholder='"А" або ["А","В"] або {"1":"А","2":"Б"} або "42"'>
+      </div>
+      <!-- Images section -->
+      <div style="margin-bottom:12px;">
+        <label style="font-size:12px;color:#666;font-weight:600;display:block;margin-bottom:6px;">Зображення до
+          питання</label>
+        <div id="existingImages" class="q-img-grid" style="margin-bottom:8px;"></div>
+        <div style="font-size:12px;color:#888;margin-bottom:6px;">Додати нові фото (можна вибрати кілька):</div>
+        <input type="file" id="qModalImages" accept="image/*" multiple style="font-size:12px;">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeQuestionModal()">Скасувати</button>
+        <button class="btn btn-primary" onclick="saveQuestion()">Зберегти</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let allParticipants = [];
+    let allQuestions = [];
+
+    // ─── Admin Login ──────────────────────────────────────────────────────────────
+    async function checkAdminAuth() {
+      const resp = await fetch('/api/admin/participants', { credentials: 'include' });
+      if (resp.status === 401) {
+        document.getElementById('loginOverlay').style.display = 'flex';
+      } else {
+        document.getElementById('loginOverlay').style.display = 'none';
+        loadDashboard();
+      }
+    }
+
+    async function doAdminLogin() {
+      const login = document.getElementById('adminLogin').value.trim();
+      const password = document.getElementById('adminPassword').value.trim();
+      const errEl = document.getElementById('adminLoginErr');
+      errEl.style.display = 'none';
+
+      if (!login || !password) { errEl.textContent = 'Введіть логін і пароль'; errEl.style.display = 'block'; return; }
+
+      try {
+        const resp = await fetch('/api/admin/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ login, password }), credentials: 'include'
+        });
+        if (resp.ok) {
+          document.getElementById('loginOverlay').style.display = 'none';
+          loadDashboard();
+        } else {
+          const d = await resp.json().catch(() => ({}));
+          errEl.textContent = d.error || 'Невірний логін або пароль';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'Помилка з\'єднання';
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function doAdminLogout() {
+      await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+      document.getElementById('loginOverlay').style.display = 'flex';
+      document.getElementById('adminLogin').value = '';
+      document.getElementById('adminPassword').value = '';
+    }
+
+    // ─── Tab navigation ───────────────────────────────────────────────────────────
+    function showTab(name) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`tab-${name}`).classList.add('active');
+      const navItem = document.querySelector(`.nav-item[data-tab="${name}"]`);
+      if (navItem) navItem.classList.add('active');
+
+      if (name === 'dashboard') loadDashboard();
+      else if (name === 'participants') loadParticipants();
+      else if (name === 'results') loadResults();
+      else if (name === 'questions') loadQuestions();
+      else if (name === 'materials') loadMaterials();
+      else if (name === 'logs') loadLogs();
+      else if (name === 'export') loadActiveSessions();
+    }
+
+    // ─── Test Access Toggle ───────────────────────────────────────────────────────
+    async function loadTestAccess() {
+      const resp = await fetch('/api/settings', { credentials: 'include' });
+      if (resp.ok) {
+        const data = await resp.json();
+        const toggle = document.getElementById('accessToggle');
+        const label = document.getElementById('accessLabel');
+        toggle.checked = data.test_access_enabled;
+        updateAccessLabel(data.test_access_enabled);
+      }
+    }
+
+    function updateAccessLabel(enabled) {
+      const label = document.getElementById('accessLabel');
+      if (enabled) {
+        label.textContent = 'Тест ВІДКРИТО — учасники можуть почати';
+        label.className = 'toggle-label enabled';
+      } else {
+        label.textContent = 'Тест ЗАКРИТО — учасники не можуть почати';
+        label.className = 'toggle-label disabled';
+      }
+    }
+
+    async function toggleTestAccess(enabled) {
+      try {
+        const resp = await fetch('/api/admin/settings/access', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled }), credentials: 'include'
+        });
+        if (resp.ok) {
+          updateAccessLabel(enabled);
+        }
+      } catch (e) {
+        alert('Помилка збереження');
+      }
+    }
+
+    // ─── Dashboard ────────────────────────────────────────────────────────────────
+    async function loadDashboard() {
+      loadTestAccess();
+
+      const [dashResp, partResp] = await Promise.all([
+        fetch('/api/admin/dashboard', { credentials: 'include' }),
+        fetch('/api/admin/participants', { credentials: 'include' })
+      ]);
+
+      if (dashResp.ok) {
+        const d = await dashResp.json();
+        document.getElementById('statTotal').textContent = d.total;
+        document.getElementById('statActive').textContent = d.active;
+        document.getElementById('statFinished').textContent = d.finished;
+      }
+
+      if (partResp.ok) {
+        allParticipants = await partResp.json();
+        const tbody = document.querySelector('#dashTable tbody');
+        tbody.innerHTML = '';
+        for (const p of allParticipants) {
+          const status = p.exam_status === 'active' ? '<span class="badge badge-active">Активний</span>'
+            : p.exam_status === 'finished' ? '<span class="badge badge-finished">Завершив</span>'
+              : '<span class="badge badge-inactive">Не почав</span>';
+          const score = p.exam_status === 'finished' ? `${(p.score_ukrainian || 0) + (p.score_math || 0)} (${p.score_ukrainian || 0}+${p.score_math || 0})` : '—';
+          tbody.innerHTML += `<tr><td>${p.seat_number || '—'}</td><td>${e(p.full_name)}</td><td>${e(p.login)}</td><td>${status}</td><td>${score}</td></tr>`;
+        }
+      }
+    }
+
+    // ─── Participants ─────────────────────────────────────────────────────────────
+    async function loadParticipants() {
+      const resp = await fetch('/api/admin/participants', { credentials: 'include' });
+      if (!resp.ok) return;
+      allParticipants = await resp.json();
+      const tbody = document.querySelector('#participantsTable tbody');
+      tbody.innerHTML = '';
+      allParticipants.forEach((p, i) => {
+        const status = p.exam_status === 'active' ? '<span class="badge badge-active">Активний</span>'
+          : p.exam_status === 'finished' ? '<span class="badge badge-finished">Завершив</span>'
+            : '<span class="badge badge-inactive">Не почав</span>';
+        tbody.innerHTML += `
+      <tr>
+        <td>${i + 1}</td><td>${p.seat_number || '—'}</td><td>${e(p.full_name)}</td>
+        <td>${e(p.login)}</td><td>${e(p.password)}</td><td>${status}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteParticipant(${p.id})">Видалити</button></td>
+      </tr>`;
+      });
+    }
+
+    async function addParticipant() {
+      const login = document.getElementById('pLogin').value.trim();
+      const password = document.getElementById('pPassword').value.trim();
+      const full_name = document.getElementById('pFullName').value.trim();
+      const seat_number = document.getElementById('pSeat').value;
+      const msgEl = document.getElementById('participantMsg');
+
+      if (!login || !password || !full_name) { showMsg(msgEl, 'error', 'Заповніть обов\'язкові поля'); return; }
+
+      const resp = await fetch('/api/admin/participants', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password, full_name, seat_number: seat_number || null }), credentials: 'include'
+      });
+
+      if (resp.ok) {
+        showMsg(msgEl, 'success', 'Учасника додано');
+        ['pLogin', 'pPassword', 'pFullName', 'pSeat'].forEach(id => document.getElementById(id).value = '');
+        loadParticipants();
+      } else {
+        const d = await resp.json();
+        showMsg(msgEl, 'error', d.error || 'Помилка додавання');
+      }
+    }
+
+    async function deleteParticipant(id) {
+      if (!confirm('Видалити учасника?')) return;
+      const resp = await fetch(`/api/admin/participants/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (resp.ok) loadParticipants();
+    }
+
+    async function importCSV() {
+      const file = document.getElementById('csvFile').files[0];
+      const msgEl = document.getElementById('participantMsg');
+      if (!file) { showMsg(msgEl, 'error', 'Оберіть CSV файл'); return; }
+
+      const fd = new FormData();
+      fd.append('file', file);
+      const resp = await fetch('/api/admin/participants/import', { method: 'POST', body: fd, credentials: 'include' });
+      if (resp.ok) {
+        const d = await resp.json();
+        showMsg(msgEl, 'success', `Імпортовано: ${d.imported} учасників`);
+        document.getElementById('csvFile').value = '';
+        loadParticipants();
+      } else { showMsg(msgEl, 'error', 'Помилка імпорту'); }
+    }
+
+    // ─── Results ──────────────────────────────────────────────────────────────────
+    async function loadResults() {
+      const resp = await fetch('/api/admin/results', { credentials: 'include' });
+      if (!resp.ok) return;
+      const results = await resp.json();
+      const tbody = document.querySelector('#resultsTable tbody');
+      tbody.innerHTML = '';
+      for (const r of results) {
+        let dur = '—';
+        if (r.started_at && r.finished_at) {
+          const diff = Math.floor((new Date(r.finished_at.replace(' ', 'T')) - new Date(r.started_at.replace(' ', 'T'))) / 1000);
+          const h = Math.floor(diff / 3600), m = Math.floor((diff % 3600) / 60), s = diff % 60;
+          dur = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        const total = (r.score_ukrainian || 0) + (r.score_math || 0);
+        tbody.innerHTML += `
+      <tr onclick="loadResultDetail('${r.id}', '${e(r.full_name)}')" style="cursor:pointer;">
+        <td class="clickable">${e(r.full_name)}</td><td>${e(r.login)}</td>
+        <td>${r.seat_number || '—'}</td>
+        <td style="font-size:11px;">${r.started_at || '—'}</td>
+        <td style="font-size:11px;">${r.finished_at || '—'}</td>
+        <td>${dur}</td>
+        <td><strong>${r.score_ukrainian || 0}</strong></td>
+        <td><strong>${r.score_math || 0}</strong></td>
+        <td><strong>${total}</strong></td>
+      </tr>`;
+      }
+    }
+
+    async function loadResultDetail(sessionId, name) {
+      document.getElementById('resultsListCard').style.display = 'none';
+      document.getElementById('resultDetailCard').style.display = 'block';
+      document.getElementById('detailParticipantName').textContent = name;
+      document.getElementById('detailContent').innerHTML = 'Завантаження...';
+
+      const resp = await fetch(`/api/admin/results/${sessionId}`, { credentials: 'include' });
+      if (!resp.ok) { document.getElementById('detailContent').innerHTML = 'Помилка'; return; }
+      const data = await resp.json();
+
+      const ansMap = {};
+      for (const a of data.answers) ansMap[a.question_id] = a;
+
+      let html = '<table><thead><tr><th>Предмет</th><th>#</th><th>Тип</th><th>Питання</th><th>Відповідь</th><th>Правильна</th><th>Час(с)</th></tr></thead><tbody>';
+      for (const q of data.questions) {
+        const a = ansMap[q.id];
+        const userAns = a ? a.answer : null;
+        const correct = q.correct_answer;
+        let cls = 'detail-empty', icon = '—';
+        if (userAns !== null && userAns !== undefined) {
+          let isCorrect = false;
+          if (q.type === 'single') isCorrect = userAns === correct;
+          else if (q.type === 'open') isCorrect = String(userAns).trim().toLowerCase().replace(',', '.') === String(correct).trim().toLowerCase().replace(',', '.');
+          cls = isCorrect ? 'detail-correct' : 'detail-wrong';
+          icon = isCorrect ? '✓' : '✗';
+        }
+        html += `<tr>
+      <td>${q.subject === 'ukrainian' ? 'Укр' : 'Мат'}</td>
+      <td>${q.order_num}</td>
+      <td><span class="q-type-badge">${q.type}</span></td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e(q.text)}">${e(q.text.substring(0, 60))}${q.text.length > 60 ? '...' : ''}</td>
+      <td><span class="detail-answer ${cls}">${icon} ${userAns !== null ? e(String(userAns).substring(0, 50)) : '(без відповіді)'}</span></td>
+      <td style="font-size:11px;">${e(String(correct).substring(0, 40))}</td>
+      <td>${a ? a.time_spent_seconds : '—'}</td>
+    </tr>`;
+      }
+      html += '</tbody></table>';
+      document.getElementById('detailContent').innerHTML = html;
+    }
+
+    // ─── Questions ────────────────────────────────────────────────────────────────
+    async function loadQuestions() {
+      const resp = await fetch('/api/admin/questions', { credentials: 'include' });
+      if (!resp.ok) return;
+      allQuestions = await resp.json();
+      const tbody = document.querySelector('#questionsTable tbody');
+      tbody.innerHTML = '';
+      for (const q of allQuestions) {
+        const subj = q.subject === 'ukrainian' ? 'Укр мова' : 'Математика';
+        tbody.innerHTML += `
+      <tr>
+        <td>${q.id}</td><td>${subj}</td><td>${q.order_num}</td>
+        <td><span class="q-type-badge">${q.type}</span></td>
+        <td style="font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e(q.text.substring(0, 60))}${q.text.length > 60 ? '...' : ''}</td>
+        <td style="text-align:center;">${q.image_path ? '🖼' : '—'}</td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="openEditQuestion(${q.id})">Ред.</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})">Вид.</button>
+        </td>
+      </tr>`;
+      }
+    }
+
+    function openAddQuestion() {
+      document.getElementById('questionModalTitle').textContent = 'Додати питання';
+      document.getElementById('qModalId').value = '';
+      document.getElementById('qModalSubject').value = 'ukrainian';
+      document.getElementById('qModalOrder').value = '';
+      document.getElementById('qModalType').value = 'single';
+      document.getElementById('qModalPoints').value = '1';
+      document.getElementById('qModalInstruction').value = '';
+      document.getElementById('qModalText').value = '';
+      document.getElementById('qModalOptions').value = '';
+      document.getElementById('qModalMatchLeft').value = '';
+      document.getElementById('qModalMatchRight').value = '';
+      document.getElementById('qModalCorrect').value = '';
+      document.getElementById('qModalImages').value = '';
+      document.getElementById('existingImages').innerHTML = '';
+      toggleMatchFields();
+      document.getElementById('questionModal').classList.add('show');
+    }
+
+    async function openEditQuestion(id) {
+      const q = allQuestions.find(q => q.id === id);
+      if (!q) return;
+      document.getElementById('questionModalTitle').textContent = `Редагувати питання #${id}`;
+      document.getElementById('qModalId').value = q.id;
+      document.getElementById('qModalSubject').value = q.subject;
+      document.getElementById('qModalOrder').value = q.order_num;
+      document.getElementById('qModalType').value = q.type;
+      document.getElementById('qModalPoints').value = q.points || 1;
+      document.getElementById('qModalInstruction').value = q.instruction || '';
+      document.getElementById('qModalText').value = q.text;
+      document.getElementById('qModalOptions').value = q.options || '';
+      document.getElementById('qModalMatchLeft').value = q.match_left || '';
+      document.getElementById('qModalMatchRight').value = q.match_right || '';
+      document.getElementById('qModalCorrect').value = q.correct_answer;
+      document.getElementById('qModalImages').value = '';
+      toggleMatchFields();
+
+      // Load existing images
+      const imgContainer = document.getElementById('existingImages');
+      imgContainer.innerHTML = '';
+      if (q.image_path) {
+        imgContainer.innerHTML += `<div class="q-img-thumb" title="Основне фото">
+      <img src="/${e(q.image_path)}" onclick="window.open('/${e(q.image_path)}','_blank')">
+    </div>`;
+      }
+      try {
+        const resp = await fetch(`/api/admin/questions/${id}/images`, { credentials: 'include' });
+        if (resp.ok) {
+          const imgs = await resp.json();
+          for (const img of imgs) {
+            imgContainer.innerHTML += `<div class="q-img-thumb" id="qimgthumb-${img.id}">
+          <img src="/${e(img.image_path)}" onclick="window.open('/${e(img.image_path)}','_blank')">
+          <button class="q-img-del" onclick="deleteQuestionImage(${id}, ${img.id})" title="Видалити фото">✕</button>
+        </div>`;
+          }
+        }
+      } catch (err) { }
+
+      document.getElementById('questionModal').classList.add('show');
+    }
+
+    async function deleteQuestionImage(qId, imgId) {
+      if (!confirm('Видалити це фото?')) return;
+      const resp = await fetch(`/api/admin/questions/${qId}/images/${imgId}`, { method: 'DELETE', credentials: 'include' });
+      if (resp.ok) {
+        const el = document.getElementById(`qimgthumb-${imgId}`);
+        if (el) el.remove();
+      }
+    }
+
+    function closeQuestionModal() {
+      document.getElementById('questionModal').classList.remove('show');
+    }
+
+    function toggleMatchFields() {
+      const type = document.getElementById('qModalType').value;
+      document.getElementById('matchSection').style.display = type === 'match' ? 'block' : 'none';
+      document.getElementById('optionsSection').style.display = (type === 'single' || type === 'multiple') ? 'block' : 'none';
+    }
+
+    async function saveQuestion() {
+      const id = document.getElementById('qModalId').value;
+      const payload = {
+        subject: document.getElementById('qModalSubject').value,
+        order_num: parseInt(document.getElementById('qModalOrder').value),
+        type: document.getElementById('qModalType').value,
+        text: document.getElementById('qModalText').value,
+        options: document.getElementById('qModalOptions').value || null,
+        match_left: document.getElementById('qModalMatchLeft').value || null,
+        match_right: document.getElementById('qModalMatchRight').value || null,
+        correct_answer: document.getElementById('qModalCorrect').value,
+        points: parseInt(document.getElementById('qModalPoints').value) || 1,
+        instruction: document.getElementById('qModalInstruction').value || null
+      };
+
+      let qId = id;
+      let resp;
+      if (id) {
+        resp = await fetch(`/api/admin/questions/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload), credentials: 'include'
+        });
+      } else {
+        resp = await fetch('/api/admin/questions', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload), credentials: 'include'
+        });
+        if (resp.ok) { const d = await resp.json(); qId = d.id; }
+      }
+
+      // Upload multiple images if selected
+      const imgFiles = document.getElementById('qModalImages').files;
+      if (imgFiles && imgFiles.length > 0 && qId) {
+        const fd = new FormData();
+        for (const file of imgFiles) fd.append('images', file);
+        await fetch(`/api/admin/questions/${qId}/images`, {
+          method: 'POST', body: fd, credentials: 'include'
+        });
+      }
+
+      closeQuestionModal();
+      loadQuestions();
+    }
+
+    async function deleteQuestion(id) {
+      if (!confirm(`Видалити питання #${id}?`)) return;
+      const resp = await fetch(`/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (resp.ok) loadQuestions();
+    }
+
+    // ─── Reference Materials ──────────────────────────────────────────────────────
+    async function loadMaterials() {
+      const subj = document.getElementById('matFilterSubj').value;
+      let url = '/api/admin/reference-materials';
+      if (subj) url += `?subject=${subj}`;
+      const resp = await fetch(url, { credentials: 'include' });
+      if (!resp.ok) return;
+      const materials = await resp.json();
+
+      const container = document.getElementById('materialsList');
+      if (materials.length === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:13px;">Матеріалів ще немає. Додайте вище.</p>';
+        return;
+      }
+
+      let html = '<div class="ref-grid">';
+      for (const m of materials) {
+        const subjLabel = m.subject === 'math' ? 'Математика' : 'Укр. мова';
+        html += `<div class="ref-item">
+      ${m.image_path ? `<img src="/${e(m.image_path)}" onclick="window.open('/${e(m.image_path)}','_blank')" title="${e(m.title || '')}">` : `<div style="height:120px;background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;">(без фото)</div>`}
+      <div class="ref-item-info">
+        <div class="ref-item-title">${m.title ? e(m.title) : '(без назви)'}</div>
+        <div class="ref-item-subj">${e(subjLabel)}</div>
+      </div>
+      <button class="ref-item-del" onclick="deleteMaterial(${m.id})">✕</button>
+    </div>`;
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    async function addMaterial() {
+      const subject = document.getElementById('matSubject').value;
+      const title = document.getElementById('matTitle').value.trim();
+      const order_num = document.getElementById('matOrder').value;
+      const files = document.getElementById('matImages').files;
+      const msgEl = document.getElementById('materialsMsg');
+
+      const fd = new FormData();
+      fd.append('subject', subject);
+      fd.append('title', title);
+      fd.append('order_num', order_num || 0);
+      for (const file of files) fd.append('images', file);
+
+      const resp = await fetch('/api/admin/reference-materials', {
+        method: 'POST', body: fd, credentials: 'include'
+      });
+
+      if (resp.ok) {
+        showMsg(msgEl, 'success', 'Матеріал(и) додано');
+        document.getElementById('matTitle').value = '';
+        document.getElementById('matImages').value = '';
+        loadMaterials();
+      } else {
+        const d = await resp.json();
+        showMsg(msgEl, 'error', d.error || 'Помилка додавання');
+      }
+    }
+
+    async function deleteMaterial(id) {
+      if (!confirm('Видалити матеріал?')) return;
+      const resp = await fetch(`/api/admin/reference-materials/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (resp.ok) loadMaterials();
+    }
+
+    // ─── Logs ─────────────────────────────────────────────────────────────────────
+    async function loadLogs() {
+      const pid = document.getElementById('logFilterParticipant').value;
+      const evt = document.getElementById('logFilterEvent').value;
+      let url = '/api/admin/logs?';
+      if (pid) url += `participant_id=${encodeURIComponent(pid)}&`;
+      if (evt) url += `event_type=${encodeURIComponent(evt)}&`;
+
+      const resp = await fetch(url, { credentials: 'include' });
+      if (!resp.ok) return;
+      const logs = await resp.json();
+      const tbody = document.querySelector('#logsTable tbody');
+      tbody.innerHTML = '';
+      for (const log of logs) {
+        tbody.innerHTML += `<tr>
+      <td style="font-size:11px;white-space:nowrap;">${log.created_at || '—'}</td>
+      <td>${log.full_name ? e(log.full_name) : (log.participant_id || '—')}</td>
+      <td><span class="badge badge-inactive">${e(log.event_type || '')}</span></td>
+      <td style="font-size:11px;max-width:300px;word-break:break-all;">${e((log.payload || '').substring(0, 120))}</td>
+    </tr>`;
+      }
+    }
+
+    // ─── Active sessions ──────────────────────────────────────────────────────────
+    async function loadActiveSessions() {
+      const resp = await fetch('/api/admin/sessions/active', { credentials: 'include' });
+      if (!resp.ok) return;
+      const sessions = await resp.json();
+      const tbody = document.querySelector('#activeSessionsTable tbody');
+      tbody.innerHTML = '';
+      for (const s of sessions) {
+        tbody.innerHTML += `<tr>
+      <td>${e(s.full_name)}</td><td>${e(s.login)}</td>
+      <td>${s.seat_number || '—'}</td>
+      <td style="font-size:11px;">${s.started_at || '—'}</td>
+      <td>${s.time_remaining_seconds || '—'}</td>
+    </tr>`;
+      }
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────────
+    function e(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showMsg(el, type, text) {
+      el.className = `msg ${type}`;
+      el.textContent = text;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    document.getElementById('questionModal').addEventListener('click', (ev) => {
+      if (ev.target === document.getElementById('questionModal')) closeQuestionModal();
+    });
+
+    checkAdminAuth();
+  </script>
+</body>
+
+</html>

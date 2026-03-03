@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSE НМТ — Вхід</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-bar {
+      background: #123961;
+      border-bottom: none;
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 70px;
+    }
+
+    .kse-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kse-logo-wrap img {
+      height: 48px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .kse-logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .kse-logo-main {
+      font-size: 22px;
+      font-weight: 700;
+      color: #123961;
+      letter-spacing: 1px;
+    }
+
+    .kse-logo-sub {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .page-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 40px;
+    }
+
+    .login-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 40px 36px;
+      width: 340px;
+    }
+
+    .login-card h2 {
+      font-size: 22px;
+      color: #123961;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #123961;
+    }
+
+    .btn-login {
+      width: 100%;
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-login:hover {
+      background: #0d2d4a;
+    }
+
+    .error-msg {
+      color: #123961;
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .participant-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      width: 300px;
+      overflow: hidden;
+      min-height: 180px;
+    }
+
+    .card-header {
+      background: #123961;
+      color: #fff;
+      padding: 16px 20px;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+
+    .card-header .seat {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .card-body .name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #123961;
+      margin-bottom: 16px;
+    }
+
+    .card-body .credentials {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.8;
+    }
+
+    .card-body .credentials span {
+      color: #123961;
+      font-weight: 600;
+    }
+
+    .card-placeholder {
+      padding: 40px 20px;
+      text-align: center;
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="top-bar">
+    <div class="kse-logo-wrap">
+      <img src="/KSE_Logo.png" alt="KSE" onerror="this.style.display='none'">
+    </div>
+  </div>
+
+  <div class="page-content">
+    <div class="login-card">
+      <h2>Увійти</h2>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginInput">Логін</label>
+          <input type="text" id="loginInput" name="login" autocomplete="username" placeholder="Введіть логін">
+        </div>
+        <div class="form-group">
+          <label for="passwordInput">Пароль</label>
+          <input type="password" id="passwordInput" name="password" autocomplete="current-password"
+            placeholder="Введіть пароль">
+        </div>
+        <button type="submit" class="btn-login">Увійти</button>
+        <div class="error-msg" id="errorMsg">Невірний логін або пароль</div>
+      </form>
+    </div>
+
+    <div class="participant-card" id="participantCard">
+      <div id="cardContent">
+        <div class="card-placeholder">Введіть логін для перегляду картки учасника</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const loginInput = document.getElementById('loginInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const errorMsg = document.getElementById('errorMsg');
+    const cardContent = document.getElementById('cardContent');
+
+    // Preview card on login blur
+    loginInput.addEventListener('blur', async () => {
+      const login = loginInput.value.trim();
+      if (!login) return;
+      cardContent.innerHTML = `
+      <div class="card-header">
+        УЧАСНИК<br>
+        <div class="seat">Логін: ${login}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-placeholder">Введіть пароль і натисніть «Увійти»</div>
+      </div>
+    `;
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMsg.style.display = 'none';
+
+      const login = loginInput.value.trim();
+      const password = passwordInput.value;
+
+      try {
+        const resp = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ login, password }),
+          credentials: 'include'
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          errorMsg.textContent = data.error || 'Помилка входу';
+          errorMsg.style.display = 'block';
+          return;
+        }
+
+        const p = data.participant;
+
+        // Show participant card
+        cardContent.innerHTML = `
+        <div class="card-header">
+          РОБОЧЕ МІСЦЕ №${p.seat_number || '—'}
+        </div>
+        <div class="card-body">
+          <div class="name">${p.full_name}</div>
+          <div class="credentials">
+            Логін: <span>${p.login}</span><br>
+            Пароль: <span>${password}</span>
+          </div>
+        </div>
+      `;
+
+        setTimeout(() => { window.location.href = '/dashboard.html'; }, 800);
+
+      } catch (err) {
+        errorMsg.textContent = 'Помилка з\'єднання з сервером';
+        errorMsg.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+
+</html>

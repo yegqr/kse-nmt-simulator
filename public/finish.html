@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSE НМТ — Тест завершено</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; }
+
+    .header {
+      background: #1a2744;
+      padding: 14px 32px;
+      display: flex;
+      align-items: center;
+    }
+    .kse-logo { display: flex; flex-direction: column; }
+    .kse-logo-main { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+    .kse-logo-sub { font-size: 9px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .result-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 48px 40px;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    .checkmark {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .result-card h1 {
+      font-size: 24px;
+      color: #1a2744;
+      margin-bottom: 12px;
+    }
+
+    .result-card .subtitle {
+      font-size: 16px;
+      color: #27ae60;
+      margin-bottom: 32px;
+      font-weight: 600;
+    }
+
+    .participant-info {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+    .participant-info h3 { font-size: 15px; color: #1a2744; margin-bottom: 14px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #555;
+      padding: 6px 0;
+    }
+    .info-row span:last-child { font-weight: 600; color: #1a2744; }
+
+    .scores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .score-card {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .score-card .subject { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .score-card .score { font-size: 36px; font-weight: 700; color: #c0392b; }
+    .score-card .total { font-size: 13px; color: #aaa; margin-top: 4px; }
+    .total-score { font-size: 16px; color: #1a2744; font-weight: 600; margin-bottom: 24px; }
+    .total-score span { font-size: 24px; color: #c0392b; }
+
+    .thank-you {
+      font-size: 15px;
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .loading { color: #aaa; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="kse-logo">
+  </div>
+</header>
+
+<main class="main">
+  <div class="result-card" id="resultCard">
+    <div class="loading">Завантаження результатів...</div>
+  </div>
+</main>
+
+<script>
+async function init() {
+  try {
+    // Auth
+    const meResp = await fetch('/api/me', { credentials: 'include' });
+    if (!meResp.ok) { window.location.href = '/login.html'; return; }
+    const { participant } = await meResp.json();
+
+    // Get session
+    const sessResp = await fetch('/api/exam/session', { credentials: 'include' });
+    if (!sessResp.ok) { window.location.href = '/dashboard.html'; return; }
+    const sess = await sessResp.json();
+
+    if (sess.status !== 'finished') {
+      window.location.href = '/exam.html';
+      return;
+    }
+
+    // Calculate duration
+    let durationStr = '—';
+    let startedStr = '—';
+    let finishedStr = '—';
+
+    if (sess.started_at) {
+      startedStr = sess.started_at;
+    }
+    if (sess.finished_at) {
+      finishedStr = sess.finished_at;
+    }
+    if (sess.started_at && sess.finished_at) {
+      const startD = new Date(sess.started_at.replace(' ', 'T'));
+      const endD = new Date(sess.finished_at.replace(' ', 'T'));
+      const diffSec = Math.floor((endD - startD) / 1000);
+      const h = Math.floor(diffSec / 3600);
+      const m = Math.floor((diffSec % 3600) / 60);
+      const s = diffSec % 60;
+      durationStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    const ukr = sess.score_ukrainian ?? 0;
+    const math = sess.score_math ?? 0;
+    const total = ukr + math;
+
+    document.getElementById('resultCard').innerHTML = `
+      <div class="checkmark">✅</div>
+      <h1>Роботу над тестом завершено</h1>
+      <div class="subtitle">KSE НМТ Симуляція 2026</div>
+
+      <div class="participant-info">
+        <h3>Інформація про учасника</h3>
+        <div class="info-row"><span>ПІБ:</span> <span>${participant.full_name}</span></div>
+        <div class="info-row"><span>Логін:</span> <span>${participant.login}</span></div>
+        <div class="info-row"><span>Робоче місце:</span> <span>${participant.seat_number || '—'}</span></div>
+        <div class="info-row"><span>Початок:</span> <span>${startedStr}</span></div>
+        <div class="info-row"><span>Завершення:</span> <span>${finishedStr}</span></div>
+        <div class="info-row"><span>Витрачений час:</span> <span>${durationStr}</span></div>
+      </div>
+
+      <div class="scores">
+        <div class="score-card">
+          <div class="subject">Українська мова</div>
+          <div class="score">${ukr}</div>
+          <div class="total">із 33 балів</div>
+        </div>
+        <div class="score-card">
+          <div class="subject">Математика</div>
+          <div class="score">${math}</div>
+          <div class="total">із 33 балів</div>
+        </div>
+      </div>
+      <div class="total-score">Загальний результат: <span>${total}</span> балів із 66</div>
+
+      <p class="thank-you">
+        Дякуємо за участь у KSE НМТ Симуляції 2026!<br>
+        Результати зафіксовано та передано адміністраторам.
+      </p>
+    `;
+  } catch (e) {
+    document.getElementById('resultCard').innerHTML = '<div class="loading">Помилка завантаження результатів</div>';
+    console.error(e);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

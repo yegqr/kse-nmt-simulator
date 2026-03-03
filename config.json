@@ -1,0 +1,14 @@
+{
+  "exam": {
+    "title": "KSE НМТ Симуляція 2026",
+    "date": "2026-05-25",
+    "start_time": "10:00",
+    "duration_minutes": 120
+  },
+  "admin": {
+    "login": "admin",
+    "password": "kse_admin_2026"
+  },
+  "show_results_to_participant": false,
+  "allow_retake": false
+}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 100" width="340" height="100">
+  <!-- KSE letters -->
+  <text x="10" y="78" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="80" fill="#1a2744">K</text>
+  <text x="85" y="78" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="80" fill="#1a2744">S</text>
+  <text x="155" y="78" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="80" fill="#1a2744">E</text>
+  <!-- Divider -->
+  <line x1="228" y1="12" x2="228" y2="88" stroke="#1a2744" stroke-width="2.5"/>
+  <!-- Text -->
+  <text x="240" y="38" font-family="Arial, sans-serif" font-size="20" fill="#1a2744">Kyiv</text>
+  <text x="240" y="62" font-family="Arial, sans-serif" font-size="20" fill="#1a2744">School of</text>
+  <text x="240" y="86" font-family="Arial, sans-serif" font-size="20" fill="#1a2744">Economics</text>
+</svg>

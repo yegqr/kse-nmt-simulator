@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSE НМТ — Панель учасника</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: #123961;
+      color: #fff;
+      padding: 10px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+
+    .kse-logo-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .kse-logo-wrap img {
+      height: 48px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .user-area {
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-name {
+      font-size: 14px;
+      color: #ddd;
+    }
+
+    .user-caret {
+      font-size: 10px;
+      color: #aaa;
+    }
+
+    .user-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      min-width: 160px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      display: none;
+      z-index: 100;
+    }
+
+    .user-area:hover .user-dropdown {
+      display: block;
+    }
+
+    .user-dropdown a {
+      display: block;
+      padding: 10px 16px;
+      font-size: 14px;
+      color: #333;
+      text-decoration: none;
+    }
+
+    .user-dropdown a:hover {
+      background: #f5f5f5;
+      color: #123961;
+    }
+
+    /* Tabs nav */
+    .tabs-nav {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 0 32px;
+      display: flex;
+      gap: 0;
+    }
+
+    .tab-item {
+      padding: 14px 20px;
+      font-size: 14px;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .tab-item.active {
+      color: #123961;
+      border-bottom-color: #123961;
+      font-weight: 600;
+    }
+
+    .tab-item:hover {
+      color: #123961;
+    }
+
+    /* Main content */
+    .main {
+      padding: 32px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .exam-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    .exam-title-text h2 {
+      font-size: 17px;
+      color: #123961;
+      margin-bottom: 4px;
+    }
+
+    .exam-title-text p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .btn-start {
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-start:hover {
+      background: #0d2d4a;
+    }
+
+    .btn-start.continue {
+      background: #27ae60;
+    }
+
+    .btn-start.continue:hover {
+      background: #219a52;
+    }
+
+    .btn-start:disabled {
+      background: #999;
+      cursor: default;
+    }
+
+    .accordion {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .accordion-header {
+      padding: 14px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      color: #123961;
+      user-select: none;
+    }
+
+    .accordion-header:hover {
+      background: #fafafa;
+    }
+
+    .accordion-body {
+      display: none;
+      border-top: 1px solid #eee;
+      padding: 16px 20px 20px;
+    }
+
+    .accordion-body.open {
+      display: block;
+    }
+
+    .accordion-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .clock-icon {
+      font-size: 18px;
+    }
+
+    .warning-block {
+      background: #fff8e1;
+      border: 1px solid #f9ca24;
+      border-left: 4px solid #f9ca24;
+      border-radius: 4px;
+      padding: 14px 20px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .warning-block strong {
+      color: #123961;
+    }
+
+    .access-closed-block {
+      background: #fff0ee;
+      border: 1px solid #123961;
+      border-left: 4px solid #123961;
+      border-radius: 4px;
+      padding: 14px 20px;
+      font-size: 14px;
+      color: #0a2235;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .access-closed-block strong {
+      color: #0d2d4a;
+    }
+
+    .finished-msg {
+      background: #e8f5e9;
+      border: 1px solid #4caf50;
+      border-radius: 6px;
+      padding: 16px 24px;
+      color: #2e7d32;
+      font-size: 15px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .instruction-text {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 24px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #333;
+    }
+
+    .instruction-text h3 {
+      margin-bottom: 12px;
+      color: #123961;
+    }
+
+    .instruction-text ul {
+      padding-left: 20px;
+    }
+
+    .instruction-text li {
+      margin-bottom: 8px;
+    }
+
+    /* Reference materials */
+    .ref-container {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 24px;
+    }
+
+    .ref-container h3 {
+      font-size: 17px;
+      color: #123961;
+      margin-bottom: 16px;
+    }
+
+    .ref-formulas {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px;
+      font-size: 14px;
+      line-height: 2;
+      margin-bottom: 20px;
+    }
+
+    .ref-formulas b {
+      color: #123961;
+    }
+
+    .ref-image-item {
+      margin-bottom: 20px;
+    }
+
+    .ref-img-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #123961;
+      margin-bottom: 8px;
+    }
+
+    .ref-image-item img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: block;
+      cursor: pointer;
+    }
+
+    .ref-loading {
+      color: #aaa;
+      padding: 20px 0;
+      font-style: italic;
+    }
+
+    /* Image lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox.show {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 4px;
+    }
+
+    .lightbox-close {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      color: #fff;
+      font-size: 32px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+    <div style="width:120px;"></div>
+    <div class="kse-logo-wrap">
+      <img src="/KSE_Logo.png" alt="KSE" onerror="this.style.display='none'">
+    </div>
+    <div class="user-area" style="width:120px; justify-content:flex-end;">
+      <span class="user-name" id="userName" style="color:#ffe;">Завантаження...</span>
+      <span class="user-caret" style="color:#ffdddd;">▼</span>
+      <div class="user-dropdown">
+        <a href="#" id="logoutBtn">Вийти</a>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs-nav">
+    <a class="tab-item active" href="#" data-tab="exam">Іспит</a>
+    <a class="tab-item" href="#" data-tab="math">Математика: довідкові матеріали</a>
+    <a class="tab-item" href="#" data-tab="instruction">Інструкція</a>
+  </nav>
+
+  <main class="main">
+    <div id="finishedMsg" class="finished-msg">
+      Ви вже завершили тест. <a href="/finish.html">Переглянути результати</a>
+    </div>
+
+    <div id="accessClosedBlock" class="access-closed-block">
+      🔒 <strong>Тест ще не відкрито.</strong> Адміністратор ще не відкрив доступ до тесту. Зачекайте та оновіть
+      сторінку або зверніться до організатора.
+    </div>
+
+    <div id="tabExam" class="tab-content active">
+      <div class="exam-title-row">
+        <div class="exam-title-text">
+          <h2 id="examTitle">KSE НМТ Симуляція 2026</h2>
+          <p id="examDate" style="font-size:13px;color:#666;"></p>
+        </div>
+        <button class="btn-start" id="startBtn" onclick="startExam()">Розпочати тест</button>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          KSE-НМТ-2026
+          <span>▶</span>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-item">
+            <span>📁</span>
+            <span>KSE-НМТ-2026</span>
+          </div>
+          <div class="accordion-item" style="margin-left: 28px;">
+            <span class="clock-icon">🕐</span>
+            <span>Тест з обмеженим часом <strong>120 хвилин</strong></span>
+          </div>
+          <div class="accordion-item" style="margin-left: 28px;">
+            <span>📝</span>
+            <span>Українська мова: <strong>30 завдань</strong></span>
+          </div>
+          <div class="accordion-item" style="margin-left: 28px;">
+            <span>📐</span>
+            <span>Математика: <strong>22 завдання</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="warning-block">
+        ⚠ <strong>ПЕРЕВІРТЕ!</strong> чи правильно зазначені ваші прізвище, ім'я, по батькові у верхньому правому куті.
+        Якщо дані невірні — зверніться до адміністратора.
+      </div>
+    </div>
+
+    <div id="tabMath" class="tab-content">
+      <div class="ref-container">
+        <div id="mathRefImages">
+          <p class="ref-loading">Завантаження...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabUkr" class="tab-content">
+      <div class="ref-container">
+        <h3>Довідкові матеріали з української мови</h3>
+        <div id="ukrRefImages">
+          <p class="ref-loading">Завантаження додаткових матеріалів...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabInstruction" class="tab-content">
+      <div class="instruction-text">
+        <h3>Інструкція для учасника</h3>
+        <ul>
+          <li>Тест складається з 2 блоків, зараз ви вирішуєте 1 блок: <strong>Українська мова</strong> (30 завдань) і
+            <strong>Математика</strong> (22 завдання).
+          </li>
+          <li>Загальний час виконання: <strong>120 хвилин</strong>. Таймер відображається у правому верхньому куті
+            екрана.</li>
+          <li>Для завдань з одиничним вибором оберіть одну правильну відповідь.</li>
+          <li>Для завдань з множинним вибором оберіть усі правильні відповіді.</li>
+          <li>Для завдань на встановлення відповідності натисніть варіант праворуч — він призначиться до першого
+            вільного слота ліворуч.</li>
+          <li>Для завдань відкритої форми введіть відповідь у поле. Числові відповіді можна вводити з комою або крапкою.
+          </li>
+          <li><strong>Не забудьте натиснути «Зберегти відповідь»</strong> після вибору або введення відповіді на кожне
+            завдання.</li>
+          <li>Якщо ви закрили вкладку браузера, тест продовжує відраховувати час. Ви можете повернутися та продовжити.
+          </li>
+          <li>Кнопка <strong>«→?»</strong> у панелі завдань переходить до наступного незбереженого завдання.</li>
+        </ul>
+      </div>
+    </div>
+  </main>
+
+  <!-- Image lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+  <script>
+    let participant = null;
+    let mathRefLoaded = false;
+    let ukrRefLoaded = false;
+
+    function openLightbox(src) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightbox').classList.add('show');
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('show');
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    async function loadRefMaterials(subject) {
+      const containerId = subject === 'math' ? 'mathRefImages' : 'ukrRefImages';
+      const container = document.getElementById(containerId);
+      try {
+        const resp = await fetch(`/api/reference-materials?subject=${subject}`, { credentials: 'include' });
+        const materials = resp.ok ? await resp.json() : [];
+        if (materials.length === 0) {
+          container.innerHTML = '<p style="color:#aaa;font-style:italic;">Матеріали не додано адміністратором.</p>';
+          return;
+        }
+        let html = '';
+        for (const m of materials) {
+          if (m.image_path) {
+            html += `<div class="ref-image-item"><img src="/${escHtml(m.image_path)}" alt="" onclick="openLightbox('/${escHtml(m.image_path)}')" style="max-width:100%;display:block;cursor:zoom-in;margin-bottom:12px;"></div>`;
+          }
+        }
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = '<p style="color:#c0392b;">Помилка завантаження матеріалів</p>';
+      }
+    }
+
+    async function init() {
+      try {
+        const resp = await fetch('/api/me', { credentials: 'include' });
+        if (!resp.ok) { window.location.href = '/login.html'; return; }
+        const data = await resp.json();
+        participant = data.participant;
+        document.getElementById('userName').textContent = participant.full_name;
+
+        // Check test access
+        const settingsResp = await fetch('/api/settings', { credentials: 'include' });
+        if (settingsResp.ok) {
+          const settings = await settingsResp.json();
+          if (!settings.test_access_enabled) {
+            document.getElementById('accessClosedBlock').style.display = 'block';
+          }
+        }
+
+        // Check exam session
+        const sessResp = await fetch('/api/exam/session', { credentials: 'include' });
+        if (sessResp.ok) {
+          const sess = await sessResp.json();
+          if (sess.status === 'finished') {
+            document.getElementById('finishedMsg').style.display = 'block';
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            btn.textContent = 'Тест завершено';
+          } else if (sess.status === 'active') {
+            const btn = document.getElementById('startBtn');
+            btn.textContent = 'Продовжити тест';
+            btn.className = 'btn-start continue';
+          }
+        }
+      } catch (e) {
+        window.location.href = '/login.html';
+      }
+
+      // Dynamic date: current Kyiv time (UTC+2)
+      const now = new Date();
+      const kyiv = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Kiev' }));
+      const dd = String(kyiv.getDate()).padStart(2, '0');
+      const mm = String(kyiv.getMonth() + 1).padStart(2, '0');
+      const yyyy = kyiv.getFullYear();
+      const hh = String(kyiv.getHours()).padStart(2, '0');
+      const min = String(kyiv.getMinutes()).padStart(2, '0');
+      document.getElementById('examDate').textContent = `${dd}.${mm}.${yyyy} — поточний час: ${hh}:${min}`;
+    }
+
+    async function startExam() {
+      try {
+        const resp = await fetch('/api/exam/start', {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (resp.ok) {
+          window.location.href = '/exam.html';
+        } else {
+          const d = await resp.json();
+          const msg = d.error || 'Помилка запуску тесту';
+          // Show nicely for access-closed error
+          if (resp.status === 403) {
+            document.getElementById('accessClosedBlock').style.display = 'block';
+            document.getElementById('accessClosedBlock').innerHTML =
+              '🔒 <strong>Тест ще не відкрито.</strong> ' + escHtml(msg);
+          } else {
+            alert(msg);
+          }
+        }
+      } catch (e) {
+        alert('Помилка з\'єднання з сервером');
+      }
+    }
+
+    function toggleAccordion(el) {
+      const body = el.nextElementSibling;
+      const arrow = el.querySelector('span:last-child');
+      body.classList.toggle('open');
+      arrow.textContent = body.classList.contains('open') ? '▼' : '▶';
+    }
+
+    // Tab navigation
+    document.querySelectorAll('.tab-item').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = tab.dataset.tab;
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+
+        const map = { exam: 'tabExam', math: 'tabMath', ukr: 'tabUkr', instruction: 'tabInstruction' };
+        document.getElementById(map[target]).classList.add('active');
+
+        // Load reference materials lazily
+        if (target === 'math' && !mathRefLoaded) {
+          mathRefLoaded = true;
+          loadRefMaterials('math');
+        }
+        if (target === 'ukr' && !ukrRefLoaded) {
+          ukrRefLoaded = true;
+          loadRefMaterials('ukrainian');
+        }
+      });
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.href = '/login.html';
+    });
+
+    init();
+  </script>
+</body>
+
+</html>

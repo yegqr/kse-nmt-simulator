@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KSE НМТ — Екзамен</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Banner */
+    .top-banner {
+      background: #fff3cd;
+      border-left: 5px solid #123961;
+      padding: 10px 20px;
+      font-size: 13px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .top-banner span {
+      flex: 1;
+    }
+
+    .banner-hide {
+      cursor: pointer;
+      color: #123961;
+      font-weight: 600;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    /* Exam header */
+    .exam-header {
+      background: #123961;
+      padding: 8px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .exam-header-logo {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .exam-header-logo img {
+      height: 44px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    .exam-header-logo .logo-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .exam-header-logo .logo-main {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .exam-header-logo .logo-sub {
+      font-size: 9px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    /* Keyboard shortcut hint */
+    .kbd-hint {
+      font-size: 10px;
+      color: #aaa;
+      margin-left: 4px;
+    }
+
+    .btn-finish {
+      background: #c0392b;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(192, 57, 43, 0.4);
+      transition: background 0.2s;
+    }
+
+    .btn-finish:hover {
+      background: #a93226;
+    }
+
+    .timer-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .timer-display {
+      background: #8b1a1a;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      padding: 6px 16px;
+      border-radius: 4px;
+      letter-spacing: 2px;
+    }
+
+    .timer-display.hidden-timer {
+      filter: blur(6px);
+    }
+
+    .eye-btn {
+      background: none;
+      border: none;
+      color: #ccc;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* Body layout */
+    .exam-body {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Left column */
+    .left-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #f5f5f5;
+    }
+
+    /* Sub tabs */
+    .sub-tabs {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 0 20px;
+      display: flex;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    .sub-tab {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      text-decoration: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .sub-tab:hover {
+      color: #123961;
+    }
+
+    .sub-tab.active {
+      color: #123961;
+      border-bottom-color: #123961;
+      font-weight: 600;
+    }
+
+    /* Exam panel (default tab) */
+    #examPanel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .breadcrumb {
+      padding: 8px 20px;
+      font-size: 12px;
+      color: #888;
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .fullscreen-btn {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      color: #888;
+    }
+
+    /* Subject tabs */
+    .subject-tabs {
+      background: #fff;
+      border-bottom: 2px solid #ddd;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .nav-arrow {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #555;
+    }
+
+    .nav-arrow:hover {
+      background: #f5f5f5;
+    }
+
+    .subject-tab {
+      padding: 12px 20px;
+      font-size: 14px;
+      color: #555;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      font-weight: 500;
+    }
+
+    .subject-tab.active {
+      color: #123961;
+      border-bottom-color: #123961;
+      font-weight: 600;
+    }
+
+    .subject-tab:hover {
+      color: #123961;
+    }
+
+    /* Question area */
+    .question-area {
+      padding: 24px 28px;
+      flex: 1;
+      background: #f5f5f5;
+      overflow-y: auto;
+    }
+
+    /* Reference panel / Instruction panel */
+    #mathRefPanel,
+    #ukrRefPanel,
+    #instructionPanel {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+
+    .ref-panel-inner {
+      padding: 24px 28px;
+    }
+
+    .ref-panel-inner h3 {
+      font-size: 17px;
+      color: #123961;
+      margin-bottom: 16px;
+    }
+
+    .ref-formulas {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 20px;
+      font-size: 14px;
+      line-height: 1.9;
+      margin-bottom: 20px;
+    }
+
+    .ref-formulas b {
+      color: #123961;
+    }
+
+    .ref-images-section {
+      margin-top: 8px;
+    }
+
+    .ref-image-item {
+      margin-bottom: 20px;
+    }
+
+    .ref-image-item .ref-img-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #123961;
+      margin-bottom: 8px;
+    }
+
+    .ref-image-item img {
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .ref-loading {
+      color: #aaa;
+      padding: 20px 0;
+    }
+
+    /* Question nav */
+    .question-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .q-nav-btn {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #555;
+    }
+
+    .q-nav-btn:hover:not(:disabled) {
+      background: #f0f0f0;
+    }
+
+    .q-nav-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .q-num-info {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .question-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 28px;
+    }
+
+    .q-instruction {
+      font-size: 13px;
+      color: #666;
+      font-style: italic;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: #f8f8f8;
+      border-left: 3px solid #123961;
+      border-radius: 2px;
+    }
+
+    .q-images {
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .q-image {
+      max-width: 100%;
+      max-height: 320px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .q-text {
+      font-size: 15px;
+      color: #123961;
+      line-height: 1.6;
+      margin-bottom: 22px;
+      white-space: pre-wrap;
+    }
+
+    /* Single / Multiple */
+    .options-list {
+      list-style: none;
+    }
+
+    .options-list li {
+      margin-bottom: 12px;
+    }
+
+    .options-list label {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .options-list label:hover {
+      border-color: #123961;
+      background: #fff8f7;
+    }
+
+    .options-list input[type="radio"],
+    .options-list input[type="checkbox"] {
+      margin-top: 2px;
+      accent-color: #123961;
+    }
+
+    .options-list label.selected {
+      border-color: #123961;
+      background: #e8f0f8;
+    }
+
+    /* Match type */
+    .match-container {
+      display: flex;
+      gap: 16px;
+    }
+
+    .match-col {
+      flex: 1;
+    }
+
+    .match-col h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .match-left-item {
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      background: #fff;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .match-assigned {
+      padding: 6px 12px;
+      border: 1px dashed #ddd;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      background: #fafafa;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .match-assigned.has-value {
+      background: #e8f0f8;
+      border-color: #123961;
+      border-style: solid;
+    }
+
+    .match-remove {
+      background: none;
+      border: none;
+      color: #123961;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 0 4px;
+    }
+
+    .match-right-pool {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .match-option {
+      padding: 10px 12px;
+      border: 1px solid #123961;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #fff;
+      transition: background 0.15s;
+      text-align: left;
+    }
+
+    .match-option:hover {
+      background: #e8f0f8;
+    }
+
+    .match-option.used {
+      opacity: 0.35;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .match-option.dragging {
+      opacity: 0.4;
+      transform: scale(0.97);
+    }
+
+    .match-assigned.drag-over {
+      background: #d0e4f7;
+      border-color: #123961;
+      border-style: solid;
+    }
+
+    /* Open type */
+    .open-input {
+      width: 220px;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .open-input:focus {
+      outline: none;
+      border-color: #123961;
+    }
+
+    /* Save button */
+    .save-btn-wrap {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .btn-save {
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 28px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-save:hover {
+      background: #0d2d4a;
+    }
+
+    .btn-save.saved {
+      background: #888;
+      cursor: default;
+    }
+
+    .save-feedback {
+      font-size: 13px;
+      color: #123961;
+      display: none;
+    }
+
+    /* Right column */
+    .right-col {
+      width: 220px;
+      background: #fff;
+      border-left: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .right-col-header {
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #123961;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-jump-next {
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-jump-next:hover {
+      background: #0f1a2e;
+    }
+
+    .q-grid {
+      padding: 14px 12px;
+    }
+
+    .q-grid-subject {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .q-grid-inner {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-bottom: 16px;
+    }
+
+    .q-btn {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #333;
+    }
+
+    .q-btn:hover {
+      border-color: #123961;
+      color: #123961;
+    }
+
+    .q-btn.answered {
+      background: #123961;
+      border-color: #123961;
+      color: #fff;
+    }
+
+    .q-btn.current {
+      border-color: #123961;
+      border-width: 3px;
+    }
+
+    .q-btn.answered.current {
+      border-color: #123961;
+    }
+
+    /* Finish overlay */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: #fff;
+      border-radius: 8px;
+      padding: 32px;
+      max-width: 540px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal h3 {
+      font-size: 18px;
+      color: #123961;
+      margin-bottom: 16px;
+    }
+
+    .modal p {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .unanswered-box {
+      border: 2px solid #123961;
+      border-radius: 4px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+
+    .unanswered-box h4 {
+      color: #123961;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .unanswered-box ul {
+      padding-left: 16px;
+      color: #555;
+      line-height: 1.8;
+    }
+
+    .modal-btns {
+      display: flex;
+      gap: 12px;
+      flex-direction: column;
+    }
+
+    .btn-confirm-finish {
+      border: 2px solid #123961;
+      background: #fff;
+      color: #123961;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-confirm-finish:hover {
+      background: #e8f0f8;
+    }
+
+    .btn-cancel-finish {
+      background: #123961;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-cancel-finish:hover {
+      background: #0d2d4a;
+    }
+
+    /* Image lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox.show {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 4px;
+    }
+
+    .lightbox-close {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      color: #fff;
+      font-size: 32px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+
+    @media (max-width: 700px) {
+      .exam-body {
+        flex-direction: column;
+      }
+
+      .right-col {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #ddd;
+      }
+
+      .q-grid-inner {
+        grid-template-columns: repeat(6, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Top Banner -->
+  <div class="top-banner" id="topBanner">
+    <span>KSE-НМТ-2026 обмежений у часі. Таймер праворуч показує, скільки часу залишилось. Після вибору відповіді
+      натисніть «Зберегти відповідь» для кожного завдання.</span>
+    <span class="banner-hide" onclick="document.getElementById('topBanner').style.display='none'">[Сховати]</span>
+  </div>
+
+  <!-- Exam Header -->
+  <div class="exam-header">
+    <div style="min-width:160px; display:flex; align-items:center;">
+      <button class="btn-finish" onclick="showFinishOverlay()">Завершити роботу над тестом</button>
+    </div>
+    <div class="exam-header-logo">
+      <img src="/KSE_Logo.png" alt="KSE" onerror="this.style.display='none'">
+    </div>
+    <div style="min-width:160px; display:flex; align-items:center; justify-content:flex-end;">
+      <div class="timer-wrap">
+        <div class="timer-display" id="timerDisplay">02:00:00</div>
+        <button class="eye-btn" id="eyeBtn" onclick="toggleTimer()" title="Показати/сховати таймер">👁</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main body -->
+  <div class="exam-body">
+    <!-- Left column -->
+    <div class="left-col">
+      <!-- Sub tabs -->
+      <div class="sub-tabs">
+        <span class="sub-tab active" data-panel="examPanel" onclick="switchSubTab(this)">Іспит</span>
+        <span class="sub-tab" data-panel="mathRefPanel" onclick="switchSubTab(this)">Математика: довідкові
+          матеріали</span>
+        <span class="sub-tab" data-panel="instructionPanel" onclick="switchSubTab(this)">Інструкція</span>
+      </div>
+
+      <!-- Exam panel -->
+      <div id="examPanel">
+        <div class="breadcrumb">
+          <span>Іспит &rsaquo; KSE-НМТ-2026 &rsaquo; KSE-НМТ-2026</span>
+          <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Повноекранний режим">⛶</button>
+        </div>
+
+        <div class="subject-tabs">
+          <button class="nav-arrow" onclick="navigateSubject(-1)">&#8249; Назад</button>
+          <span class="subject-tab" id="subUkr" onclick="switchSubject('ukrainian')">Українська мова</span>
+          <span class="subject-tab" id="subMath" onclick="switchSubject('math')">Математика</span>
+          <button class="nav-arrow" onclick="navigateSubject(1)">Вперед &#8250;</button>
+        </div>
+
+        <div class="question-area" id="questionArea">
+          <div style="text-align:center; padding:60px; color:#aaa;">Завантаження питань...</div>
+        </div>
+      </div>
+
+      <!-- Math reference panel -->
+      <div id="mathRefPanel">
+        <div class="ref-panel-inner" id="mathRefContent">
+          <p class="ref-loading">Завантаження довідкових матеріалів...</p>
+        </div>
+      </div>
+
+      <!-- Ukrainian reference panel -->
+      <div id="ukrRefPanel">
+        <div class="ref-panel-inner" id="ukrRefContent">
+          <p class="ref-loading">Завантаження довідкових матеріалів...</p>
+        </div>
+      </div>
+
+      <!-- Instruction panel -->
+      <div id="instructionPanel">
+        <div class="ref-panel-inner">
+          <h3>Інструкція для учасника</h3>
+          <div class="ref-formulas">
+            <ul style="padding-left:18px;line-height:2;">
+              <li>Тест складається з двох блоків: <strong>Українська мова</strong> (30 завдань) і
+                <strong>Математика</strong> (22 завдання).
+              </li>
+              <li>Загальний час виконання: <strong>120 хвилин</strong>. Таймер відображається у верхньому правому куті.
+              </li>
+              <li>Для завдань з одиничним вибором оберіть одну правильну відповідь із варіантів.</li>
+              <li>Для завдань з множинним вибором оберіть усі правильні відповіді.</li>
+              <li>Для завдань на встановлення відповідності (логічні пари) натисніть на варіант праворуч — він
+                призначиться до першого вільного слота ліворуч.</li>
+              <li>Для завдань відкритої форми введіть відповідь у поле (числові відповіді можна вводити як з комою, так
+                і з крапкою).</li>
+              <li><strong>Не забудьте натиснути «Зберегти відповідь»</strong> після кожного завдання.</li>
+              <li>Якщо ви закрили вкладку, тест продовжує відраховувати час. Увійдіть знову, щоб продовжити.</li>
+              <li>Кнопка <strong>«→?»</strong> або клавіші <strong>Alt+N</strong> переходять до наступного незбереженого
+                завдання.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column -->
+    <div class="right-col">
+      <div class="right-col-header">
+        Завдання
+        <button class="btn-jump-next" onclick="jumpToNextUnanswered()" title="Наступне без відповіді (Alt+N)">→
+          ?</button>
+      </div>
+      <div class="q-grid" id="qGrid">
+        <div style="color:#aaa; font-size:13px; padding:8px;">Завантаження...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finish Overlay -->
+  <div class="overlay" id="finishOverlay">
+    <div class="modal">
+      <h3>Завершити роботу над тестом?</h3>
+      <p>Ви впевнені? Після підтвердження змінити відповіді буде неможливо.</p>
+      <div class="unanswered-box" id="unansweredBox">
+        <h4>Незбережені/відсутні відповіді:</h4>
+        <ul id="unansweredList"></ul>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-confirm-finish" onclick="confirmFinish()">Так, завершити роботу</button>
+        <button class="btn-cancel-finish" onclick="closeFinishOverlay()">Ні, повернутися до виконання завдань</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image lightbox -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
+  <script>
+    // ─── State ────────────────────────────────────────────────────────────────────
+    let questions = [];
+    let questionImages = {}; // question_id => [image objects]
+    let answers = {};
+    let savedAnswers = {};
+    let currentSubject = 'ukrainian';
+    let currentQIndex = 0;
+    let sessionId = null;
+    let timeRemaining = 0;
+    let timerInterval = null;
+    let pingInterval = null;
+    let timerHidden = false;
+    let mathRefLoaded = false;
+
+    // ─── Init ─────────────────────────────────────────────────────────────────────
+    async function init() {
+      try {
+        const meResp = await fetch('/api/me', { credentials: 'include' });
+        if (!meResp.ok) { window.location.href = '/login.html'; return; }
+
+        const sessResp = await fetch('/api/exam/session', { credentials: 'include' });
+        if (!sessResp.ok) {
+          const startResp = await fetch('/api/exam/start', { method: 'POST', credentials: 'include' });
+          if (!startResp.ok) { window.location.href = '/dashboard.html'; return; }
+          const startData = await startResp.json();
+          sessionId = startData.session_id;
+          timeRemaining = startData.time_remaining_seconds;
+        } else {
+          const sess = await sessResp.json();
+          if (sess.status === 'finished') { window.location.href = '/finish.html'; return; }
+          sessionId = sess.session_id;
+          timeRemaining = sess.time_remaining_seconds;
+        }
+
+        // Load questions and images in parallel
+        const [qResp, imgResp] = await Promise.all([
+          fetch('/api/exam/questions', { credentials: 'include' }),
+          fetch('/api/exam/question-images', { credentials: 'include' })
+        ]);
+        questions = await qResp.json();
+        if (imgResp.ok) questionImages = await imgResp.json();
+
+        buildGrid();
+        switchSubject('ukrainian');
+        startTimer();
+        startPing();
+      } catch (e) {
+        console.error(e);
+        alert('Помилка завантаження. Оновіть сторінку.');
+      }
+    }
+
+    // ─── Sub-tab switching ────────────────────────────────────────────────────────
+    let ukrRefLoaded = false;
+
+    function switchSubTab(el) {
+      document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      const target = el.dataset.panel;
+      const panels = ['examPanel', 'mathRefPanel', 'ukrRefPanel', 'instructionPanel'];
+      for (const pid of panels) {
+        const pel = document.getElementById(pid);
+        if (!pel) continue;
+        if (pid === 'examPanel') {
+          pel.style.display = target === pid ? 'flex' : 'none';
+        } else {
+          pel.style.display = target === pid ? 'block' : 'none';
+        }
+      }
+      if (target === 'mathRefPanel' && !mathRefLoaded) loadMathRef();
+      if (target === 'ukrRefPanel' && !ukrRefLoaded) loadUkrRef();
+    }
+
+    async function loadUkrRef() {
+      const content = document.getElementById('ukrRefContent');
+      try {
+        const resp = await fetch('/api/reference-materials?subject=ukrainian', { credentials: 'include' });
+        const materials = resp.ok ? await resp.json() : [];
+
+        let html = `<h3>Довідкові матеріали з української мови</h3>`;
+
+        if (materials.length === 0) {
+          html += '<p style="color:#aaa;font-style:italic;">Матеріали не завантажено. Зверніться до організатора.</p>';
+        } else {
+          html += '<div class="ref-images-section">';
+          html += '<div style="font-size:14px;font-weight:600;color:#123961;margin-bottom:12px;">Додаткові матеріали від організаторів:</div>';
+          for (const m of materials) {
+            html += '<div class="ref-image-item">';
+            if (m.title) html += `<div class="ref-img-title">${escHtml(m.title)}</div>`;
+            if (m.image_path) {
+              html += `<img src="/${escHtml(m.image_path)}" alt="${escHtml(m.title || '')}" onclick="openLightbox('/${escHtml(m.image_path)}')">  `;
+            }
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+
+        content.innerHTML = html;
+        ukrRefLoaded = true;
+      } catch (e) {
+        content.innerHTML = '<p style="color:#123961;">Помилка завантаження матеріалів</p>';
+      }
+    }
+
+    async function loadMathRef() {
+      const content = document.getElementById('mathRefContent');
+      try {
+        const resp = await fetch('/api/reference-materials?subject=math', { credentials: 'include' });
+        const materials = resp.ok ? await resp.json() : [];
+
+        if (materials.length === 0) {
+          content.innerHTML = '<p style="color:#aaa; padding:16px; font-style:italic;">Матеріали не додано адміністратором.</p>';
+        } else {
+          let html = '';
+          for (const m of materials) {
+            html += '<div class="ref-image-item">';
+            if (m.image_path) {
+              html += `<img src="/${escHtml(m.image_path)}" alt="" onclick="openLightbox('/${escHtml(m.image_path)}')" style="max-width:100%;display:block;cursor:zoom-in;">`;
+            }
+            html += '</div>';
+          }
+          content.innerHTML = html;
+        }
+        mathRefLoaded = true;
+      } catch (e) {
+        content.innerHTML = '<p style="color:#c0392b;padding:16px;">Помилка завантаження</p>';
+      }
+    }
+
+    // ─── Timer ────────────────────────────────────────────────────────────────────
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        if (timeRemaining <= 0) {
+          timeRemaining = 0;
+          updateTimerDisplay();
+          clearInterval(timerInterval);
+          autoFinish();
+        } else {
+          updateTimerDisplay();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const h = Math.floor(timeRemaining / 3600);
+      const m = Math.floor((timeRemaining % 3600) / 60);
+      const s = timeRemaining % 60;
+      const el = document.getElementById('timerDisplay');
+      el.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+      if (timeRemaining < 300) el.style.background = '#0d2d4a';
+    }
+
+    function toggleTimer() {
+      timerHidden = !timerHidden;
+      document.getElementById('timerDisplay').classList.toggle('hidden-timer', timerHidden);
+      document.getElementById('eyeBtn').textContent = timerHidden ? '🙈' : '👁';
+    }
+
+    // ─── Ping ─────────────────────────────────────────────────────────────────────
+    function startPing() {
+      pingInterval = setInterval(() => {
+        fetch('/api/exam/ping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, time_remaining_seconds: timeRemaining }),
+          credentials: 'include'
+        });
+      }, 60000);
+    }
+
+    window.addEventListener('beforeunload', (e) => {
+      e.preventDefault();
+      e.returnValue = 'Ви впевнені? Прогрес збережено, але тест продовжує відлік часу.';
+    });
+
+    // Alt+N → next unanswered. Backtick / F2 → toggle right panel
+    window.addEventListener('keydown', (e) => {
+      // Alt+N — next unanswered
+      if (e.altKey && (e.key === 'n' || e.key === 'N' || e.key === 'т' || e.key === 'Т')) {
+        e.preventDefault();
+        jumpToNextUnanswered();
+        return;
+      }
+      // Backtick ` or F2 — toggle question panel
+      if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === '`' || e.key === 'F2')) {
+        // Don’t fire when typing in input/textarea
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+        e.preventDefault();
+        toggleRightCol();
+      }
+    });
+
+    // ─── Subject navigation ───────────────────────────────────────────────────────
+    function switchSubject(subject) {
+      currentSubject = subject;
+      currentQIndex = 0;
+      document.getElementById('subUkr').classList.toggle('active', subject === 'ukrainian');
+      document.getElementById('subMath').classList.toggle('active', subject === 'math');
+      renderQuestion();
+      renderGrid();
+    }
+
+    function navigateSubject(dir) {
+      const subjects = ['ukrainian', 'math'];
+      let idx = subjects.indexOf(currentSubject) + dir;
+      idx = Math.max(0, Math.min(subjects.length - 1, idx));
+      switchSubject(subjects[idx]);
+    }
+
+    // ─── Jump to next unanswered ──────────────────────────────────────────────────
+    function jumpToNextUnanswered() {
+      const subjectQs = questions.filter(q => q.subject === currentSubject).sort((a, b) => a.order_num - b.order_num);
+      // Search from current+1 forward
+      for (let i = currentQIndex + 1; i < subjectQs.length; i++) {
+        if (!savedAnswers[subjectQs[i].id]) { currentQIndex = i; renderQuestion(); return; }
+      }
+      // Wrap around
+      for (let i = 0; i < currentQIndex; i++) {
+        if (!savedAnswers[subjectQs[i].id]) { currentQIndex = i; renderQuestion(); return; }
+      }
+      alert('Усі відповіді в цьому блоці збережено ✓');
+    }
+
+    // ─── Grid (subject-filtered) ──────────────────────────────────────────────────
+    function renderGrid() {
+      const subjectQs = questions.filter(q => q.subject === currentSubject).sort((a, b) => a.order_num - b.order_num);
+      const label = currentSubject === 'ukrainian' ? 'Українська мова' : 'Математика';
+      const grid = document.getElementById('qGrid');
+      grid.innerHTML = '';
+
+      const labelEl = document.createElement('div');
+      labelEl.className = 'q-grid-subject';
+      labelEl.textContent = label;
+      grid.appendChild(labelEl);
+
+      const inner = document.createElement('div');
+      inner.className = 'q-grid-inner';
+      subjectQs.forEach((q, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'q-btn';
+        btn.textContent = q.order_num;
+        btn.id = `qbtn-${q.id}`;
+        btn.onclick = () => {
+          currentSubject = q.subject;
+          currentQIndex = i;
+          document.getElementById('subUkr').classList.toggle('active', q.subject === 'ukrainian');
+          document.getElementById('subMath').classList.toggle('active', q.subject === 'math');
+          const activeSubTab = document.querySelector('.sub-tab.active');
+          if (activeSubTab && activeSubTab.dataset.panel !== 'examPanel') {
+            switchSubTab(document.querySelector('.sub-tab[data-panel="examPanel"]'));
+          }
+          renderQuestion();
+        };
+        inner.appendChild(btn);
+      });
+      grid.appendChild(inner);
+      updateGrid();
+    }
+
+    // alias for backward compat (called on init)
+    const buildGrid = renderGrid;
+
+    function updateGrid() {
+      const subjectQs = questions.filter(q => q.subject === currentSubject).sort((a, b) => a.order_num - b.order_num);
+      const currentQ = subjectQs[currentQIndex];
+      subjectQs.forEach(q => {
+        const btn = document.getElementById(`qbtn-${q.id}`);
+        if (!btn) return;
+        btn.className = 'q-btn';
+        if (savedAnswers[q.id]) btn.classList.add('answered');
+        if (currentQ && q.id === currentQ.id) btn.classList.add('current');
+      });
+    }
+
+    function toggleRightCol() {
+      const col = document.getElementById('rightCol');
+      const btn = document.getElementById('collapseBtn');
+      const collapsed = col.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '◀' : '▶';
+      btn.title = collapsed ? 'Показати панель' : 'Сховати панель';
+    }
+
+    // ─── Render Question ──────────────────────────────────────────────────────────
+    function renderQuestion() {
+      const subjectQs = questions.filter(q => q.subject === currentSubject).sort((a, b) => a.order_num - b.order_num);
+      const q = subjectQs[currentQIndex];
+      if (!q) { document.getElementById('questionArea').innerHTML = '<div style="padding:40px;text-align:center;color:#aaa;">Питань немає</div>'; return; }
+
+      updateGrid();
+
+      let html = '';
+
+      if (q.instruction) {
+        html += `<div class="q-instruction">${escHtml(q.instruction)}</div>`;
+      }
+
+      // Images (legacy single + multiple)
+      const extraImages = questionImages[q.id] || [];
+      const allImages = [];
+      if (q.image_path) allImages.push({ image_path: q.image_path });
+      allImages.push(...extraImages);
+
+      if (allImages.length > 0) {
+        html += '<div class="q-images">';
+        for (const img of allImages) {
+          html += `<img class="q-image" src="/${escHtml(img.image_path)}" alt="Зображення до завдання" onclick="openLightbox('/${escHtml(img.image_path)}')">`;
+        }
+        html += '</div>';
+      }
+
+      html += `<div class="q-text">${escHtml(q.text)}</div>`;
+
+      if (q.type === 'single') html += renderSingle(q);
+      else if (q.type === 'multiple') html += renderMultiple(q);
+      else if (q.type === 'match') html += renderMatch(q);
+      else if (q.type === 'open') html += renderOpen(q);
+
+      if (q.type !== 'match') {
+        const isSaved = savedAnswers[q.id];
+        html += `
+      <div class="save-btn-wrap">
+        <button class="btn-save${isSaved ? ' saved' : ''}" id="saveBtn" onclick="saveAnswer(${q.id})">
+          ${isSaved ? 'Збережено ✓' : 'Зберегти відповідь'}
+        </button>
+        <span class="save-feedback" id="saveFeedback">✓ Відповідь збережено</span>
+      </div>`;
+      }
+
+      html += `
+    <div class="question-nav" style="margin-top:24px;">
+      <button class="q-nav-btn" onclick="navigate(-1)" ${currentQIndex === 0 ? 'disabled' : ''}>&#8592; Попереднє</button>
+      <span class="q-num-info">Завдання ${q.order_num} з ${subjectQs.length}</span>
+      <button class="q-nav-btn" onclick="navigate(1)" ${currentQIndex === subjectQs.length - 1 ? 'disabled' : ''}>Наступне &#8594;</button>
+    </div>`;
+
+      document.getElementById('questionArea').innerHTML = `<div class="question-card">${html}</div>`;
+      restoreAnswerState(q);
+    }
+
+    function renderSingle(q) {
+      const opts = JSON.parse(q.options || '[]');
+      let html = '<ul class="options-list">';
+      opts.forEach((opt, i) => {
+        const letter = opt.charAt(0);
+        html += `
+      <li>
+        <label id="lbl-${i}" onclick="selectSingle(${q.id}, '${letter}', ${i})">
+          <input type="radio" name="q${q.id}" value="${letter}">
+          ${escHtml(opt)}
+        </label>
+      </li>`;
+      });
+      html += '</ul>';
+      return html;
+    }
+
+    function renderMultiple(q) {
+      const opts = JSON.parse(q.options || '[]');
+      let html = `<p style="font-size:12px;color:#888;margin-bottom:12px;font-style:italic;">Оберіть усі правильні відповіді</p>`;
+      html += '<ul class="options-list">';
+      opts.forEach((opt, i) => {
+        const letter = opt.charAt(0);
+        html += `
+      <li>
+        <label id="lbl-${i}" onclick="toggleMultiple(${q.id}, '${letter}', ${i})">
+          <input type="checkbox" name="q${q.id}" value="${letter}">
+          ${escHtml(opt)}
+        </label>
+      </li>`;
+      });
+      html += '</ul>';
+      return html;
+    }
+
+    // ─── Match drag-and-drop ──────────────────────────────────────────────────────
+    let _dragQid = null;
+    let _dragLetter = null;
+    let _dragFromSlot = null; // slot key if dragging from assigned slot
+
+    function onMatchDragStart(e, qId, letter, fromSlot) {
+      _dragQid = qId;
+      _dragLetter = letter;
+      _dragFromSlot = fromSlot || null;
+      e.dataTransfer.effectAllowed = 'move';
+      e.currentTarget.classList.add('dragging');
+    }
+
+    function onMatchDragEnd(e) {
+      e.currentTarget.classList.remove('dragging');
+    }
+
+    function onSlotDragOver(e, slotEl) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      slotEl.classList.add('drag-over');
+    }
+
+    function onSlotDragLeave(slotEl) {
+      slotEl.classList.remove('drag-over');
+    }
+
+    function onSlotDrop(e, qId, key) {
+      e.preventDefault();
+      const slotEl = e.currentTarget;
+      slotEl.classList.remove('drag-over');
+      if (_dragQid !== qId || !_dragLetter) return;
+
+      if (!answers[qId]) answers[qId] = {};
+
+      // If dragged from another slot, clear that slot first
+      if (_dragFromSlot) {
+        delete answers[qId][_dragFromSlot];
+      }
+
+      // If slot already has a value, swap it back to pool (just clear it)
+      delete answers[qId][key];
+      // Assign new
+      answers[qId][key] = _dragLetter;
+
+      _dragQid = null; _dragLetter = null; _dragFromSlot = null;
+      markUnsaved(qId);
+      renderQuestion();
+    }
+
+    function renderMatch(q) {
+      const left = JSON.parse(q.match_left || '[]');
+      const right = JSON.parse(q.match_right || '[]');
+      const currentMatch = answers[q.id] || {};
+      const usedRight = new Set(Object.values(currentMatch));
+
+      let html = '<div class="match-container">';
+
+      html += '<div class="match-col"><h4>Ліворуч</h4>';
+      left.forEach((item) => {
+        html += `<div class="match-left-item">${escHtml(item)}</div>`;
+      });
+      html += '</div>';
+
+      html += '<div class="match-col"><h4>Відповідність</h4>';
+      left.forEach((item, i) => {
+        const key = String(i + 1);
+        const assigned = currentMatch[key];
+        const rightItem = assigned ? right.find(r => r.charAt(0) === assigned) : null;
+        html += `
+      <div class="match-assigned${assigned ? ' has-value' : ''}" id="slot-${q.id}-${key}"
+           ondragover="onSlotDragOver(event, this)"
+           ondragleave="onSlotDragLeave(this)"
+           ondrop="onSlotDrop(event, ${q.id}, '${key}')">
+        <span>${rightItem ? escHtml(rightItem) : '<span style="color:#bbb">—</span>'}</span>
+        ${assigned ? `<button class="match-remove" onclick="removeMatch(${q.id}, '${key}')">✕</button>` : ''}
+      </div>`;
+      });
+      html += '</div>';
+
+      const shuffledRight = getShuffledRight(q.id, right);
+
+      html += '<div class="match-col"><h4>Праворуч</h4><div class="match-right-pool">';
+      shuffledRight.forEach((opt) => {
+        const letter = opt.charAt(0);
+        const isUsed = usedRight.has(letter);
+        html += `<button class="match-option${isUsed ? ' used' : ''}"
+          draggable="${isUsed ? 'false' : 'true'}"
+          ondragstart="onMatchDragStart(event, ${q.id}, '${letter}')"
+          ondragend="onMatchDragEnd(event)"
+          onclick="assignMatch(${q.id}, '${letter}')">${escHtml(opt)}</button>`;
+      });
+      html += '</div></div></div>';
+
+      html += `
+    <div class="save-btn-wrap" style="margin-top:16px;">
+      <button class="btn-save${savedAnswers[q.id] ? ' saved' : ''}" id="saveBtn" onclick="saveAnswer(${q.id})">
+        ${savedAnswers[q.id] ? 'Збережено ✓' : 'Зберегти відповідь'}
+      </button>
+      <span class="save-feedback" id="saveFeedback">✓ Відповідь збережено</span>
+    </div>`;
+      html += `<div style="font-size:12px;color:#888;margin-top:8px;">Перетягніть до слота або натисніть — призначить відповідність.</div>`;
+
+      return html;
+    }
+
+    function renderOpen(q) {
+      const val = answers[q.id] !== undefined ? answers[q.id] : '';
+      const isNumeric = q.subject === 'math';
+      return `
+    <input class="open-input" id="openInput-${q.id}" type="text"
+      placeholder="${isNumeric ? 'Введіть число (крапка або кома)' : 'Введіть відповідь'}"
+      value="${escHtml(String(val))}"
+      oninput="answers[${q.id}] = this.value; markUnsaved(${q.id})">`;
+    }
+
+    // ─── Restore answer visual state ──────────────────────────────────────────────
+    function restoreAnswerState(q) {
+      const val = answers[q.id];
+      if (val === undefined || val === null) return;
+
+      if (q.type === 'single') {
+        document.querySelectorAll(`input[name="q${q.id}"]`).forEach(inp => {
+          if (inp.value === val) { inp.checked = true; inp.closest('label').classList.add('selected'); }
+        });
+      } else if (q.type === 'multiple') {
+        const selected = Array.isArray(val) ? val : [];
+        document.querySelectorAll(`input[name="q${q.id}"]`).forEach(inp => {
+          if (selected.includes(inp.value)) { inp.checked = true; inp.closest('label').classList.add('selected'); }
+        });
+      }
+    }
+
+    // ─── Answer interactions ──────────────────────────────────────────────────────
+    function selectSingle(qId, letter, idx) {
+      answers[qId] = letter;
+      document.querySelectorAll(`input[name="q${qId}"]`).forEach((inp, i) => {
+        inp.closest('label').classList.toggle('selected', i === idx);
+      });
+      markUnsaved(qId);
+    }
+
+    function toggleMultiple(qId, letter, idx) {
+      if (!Array.isArray(answers[qId])) answers[qId] = [];
+      const arr = answers[qId];
+      const pos = arr.indexOf(letter);
+      if (pos >= 0) arr.splice(pos, 1); else arr.push(letter);
+      document.querySelectorAll(`input[name="q${qId}"]`).forEach((inp, i) => {
+        inp.closest('label').classList.toggle('selected', arr.includes(inp.value));
+      });
+      markUnsaved(qId);
+    }
+
+    function assignMatch(qId, letter) {
+      if (!answers[qId]) answers[qId] = {};
+      const q = questions.find(q => q.id === qId);
+      const left = JSON.parse(q.match_left || '[]');
+      for (let i = 0; i < left.length; i++) {
+        const key = String(i + 1);
+        if (!answers[qId][key]) { answers[qId][key] = letter; break; }
+      }
+      markUnsaved(qId);
+      renderQuestion();
+    }
+
+    function removeMatch(qId, key) {
+      if (answers[qId]) delete answers[qId][key];
+      markUnsaved(qId);
+      renderQuestion();
+    }
+
+    function markUnsaved(qId) {
+      savedAnswers[qId] = false;
+      const btn = document.getElementById('saveBtn');
+      if (btn) { btn.textContent = 'Зберегти відповідь'; btn.className = 'btn-save'; }
+    }
+
+    // ─── Save answer ──────────────────────────────────────────────────────────────
+    async function saveAnswer(qId) {
+      const q = questions.find(q => q.id === qId);
+      let answer = answers[qId];
+
+      if (q && q.type === 'open') {
+        const inp = document.getElementById(`openInput-${qId}`);
+        if (inp) { answer = inp.value; answers[qId] = answer; }
+      }
+
+      if (answer === undefined || answer === null || answer === '') return;
+
+      try {
+        const resp = await fetch('/api/exam/answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId, question_id: qId, answer, time_spent_seconds: 0 }),
+          credentials: 'include'
+        });
+
+        if (resp.ok) {
+          savedAnswers[qId] = true;
+          const btn = document.getElementById('saveBtn');
+          if (btn) { btn.textContent = 'Збережено ✓'; btn.className = 'btn-save saved'; }
+          const fb = document.getElementById('saveFeedback');
+          if (fb) { fb.style.display = 'inline'; setTimeout(() => { if (fb) fb.style.display = 'none'; }, 2000); }
+          updateGrid();
+        }
+      } catch (e) {
+        console.error('Save error:', e);
+      }
+    }
+
+    // ─── Navigation ───────────────────────────────────────────────────────────────
+    function navigate(dir) {
+      const subjectQs = questions.filter(q => q.subject === currentSubject).sort((a, b) => a.order_num - b.order_num);
+      currentQIndex = Math.max(0, Math.min(subjectQs.length - 1, currentQIndex + dir));
+      renderQuestion();
+    }
+
+    // ─── Finish ───────────────────────────────────────────────────────────────────
+    function showFinishOverlay() {
+      const ukr = questions.filter(q => q.subject === 'ukrainian').sort((a, b) => a.order_num - b.order_num);
+      const math = questions.filter(q => q.subject === 'math').sort((a, b) => a.order_num - b.order_num);
+      const unansweredUkr = ukr.filter(q => !savedAnswers[q.id]).map(q => q.order_num);
+      const unansweredMath = math.filter(q => !savedAnswers[q.id]).map(q => q.order_num);
+
+      const list = document.getElementById('unansweredList');
+      list.innerHTML = '';
+      if (unansweredUkr.length === 0 && unansweredMath.length === 0) {
+        list.innerHTML = '<li style="color:#123961;">Всі відповіді збережено ✓</li>';
+      } else {
+        if (unansweredUkr.length > 0) list.innerHTML += `<li><strong>Українська мова:</strong> завдання ${unansweredUkr.join(', ')}</li>`;
+        if (unansweredMath.length > 0) list.innerHTML += `<li><strong>Математика:</strong> завдання ${unansweredMath.join(', ')}</li>`;
+      }
+      document.getElementById('finishOverlay').classList.add('show');
+    }
+
+    function closeFinishOverlay() {
+      document.getElementById('finishOverlay').classList.remove('show');
+    }
+
+    async function confirmFinish() {
+      window.removeEventListener('beforeunload', () => { });
+      try {
+        const resp = await fetch('/api/exam/finish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId }),
+          credentials: 'include'
+        });
+        if (resp.ok) {
+          clearInterval(timerInterval);
+          clearInterval(pingInterval);
+          window.location.href = '/finish.html';
+        } else {
+          const d = await resp.json();
+          alert(d.error || 'Помилка завершення тесту');
+        }
+      } catch (e) { alert('Помилка з\'єднання'); }
+    }
+
+    async function autoFinish() {
+      clearInterval(pingInterval);
+      await confirmFinish();
+    }
+
+    // ─── Lightbox ─────────────────────────────────────────────────────────────────
+    function openLightbox(src) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightbox').classList.add('show');
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('show');
+      document.getElementById('lightboxImg').src = '';
+    }
+
+    // ─── Misc ─────────────────────────────────────────────────────────────────────
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => { });
+      else document.exitFullscreen();
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
