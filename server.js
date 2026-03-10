@@ -648,6 +648,51 @@ app.get('/api/admin/export/csv', requireAdmin, (req, res) => {
   );
 });
 
+// JSON Export of all questions
+app.get('/api/admin/questions/export', requireAdmin, (req, res) => {
+  db.all('SELECT * FROM questions', [], (err, questions) => {
+    if (err) return res.status(500).json({ error: err.message });
+    db.all('SELECT * FROM question_images', [], (err, images) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ questions, images });
+    });
+  });
+});
+
+// JSON Import of questions (completely replaces existing ones)
+app.post('/api/admin/questions/import', requireAdmin, (req, res) => {
+  const { questions, images } = req.body;
+  if (!questions || !Array.isArray(questions)) return res.status(400).json({ error: 'Некоректний формат JSON' });
+
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+    db.run('DELETE FROM questions');
+    db.run('DELETE FROM question_images');
+
+    const qStmt = db.prepare(`
+      INSERT INTO questions (id, subject, order_num, type, text, options, match_left, match_right, correct_answer, image_path, points, instruction)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const q of questions) {
+      qStmt.run(q.id, q.subject, q.order_num, q.type, q.text, q.options, q.match_left, q.match_right, q.correct_answer, q.image_path, q.points, q.instruction);
+    }
+    qStmt.finalize();
+
+    if (images && Array.isArray(images)) {
+      const iStmt = db.prepare(`INSERT INTO question_images (id, question_id, image_path, order_num) VALUES (?, ?, ?, ?)`);
+      for (const img of images) {
+        iStmt.run(img.id, img.question_id, img.image_path, img.order_num);
+      }
+      iStmt.finalize();
+    }
+
+    db.run('COMMIT', (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ ok: true, count: questions.length });
+    });
+  });
+});
+
 // ─── Admin Questions ──────────────────────────────────────────────────────────
 
 app.get('/api/admin/questions', requireAdmin, (req, res) => {
