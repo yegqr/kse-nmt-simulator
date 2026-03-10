@@ -5,6 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KSE НМТ — Екзамен</title>
+  <!-- KaTeX for Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathContent()"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -977,6 +983,22 @@
     let mathRefLoaded = false;
     let isAdmin = false;
 
+    const LETTERS = ['А', 'Б', 'В', 'Г', 'Д'];
+
+    function renderMathContent() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true }
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
     // ─── Init ─────────────────────────────────────────────────────────────────────
     async function init() {
       try {
@@ -1074,6 +1096,7 @@
 
         content.innerHTML = html;
         ukrRefLoaded = true;
+        renderMathContent();
       } catch (e) {
         content.innerHTML = '<p style="color:#123961;">Помилка завантаження матеріалів</p>';
       }
@@ -1099,6 +1122,7 @@
           content.innerHTML = html;
         }
         mathRefLoaded = true;
+        renderMathContent();
       } catch (e) {
         content.innerHTML = '<p style="color:#c0392b;padding:16px;">Помилка завантаження</p>';
       }
@@ -1319,6 +1343,7 @@
 
       document.getElementById('questionArea').innerHTML = `<div class="question-card">${html}</div>`;
       restoreAnswerState(q);
+      renderMathContent();
     }
 
     function renderSingle(q) {
@@ -1469,7 +1494,7 @@
       const left = JSON.parse(q.match_left || '[]');
       const right = JSON.parse(q.match_right || '[]');
       const currentMatch = answers[q.id] || {};
-      const usedRight = new Set(Object.values(currentMatch));
+      const usedRightLetters = new Set(Object.values(currentMatch));
 
       let html = '<div class="match-container">';
 
@@ -1482,33 +1507,36 @@
       html += '<div class="match-col"><h4>Відповідність</h4>';
       left.forEach((item, i) => {
         const key = String(i + 1);
-        const assigned = currentMatch[key];
-        const rightItem = assigned ? right.find(r => r.charAt(0) === assigned) : null;
+        const assignedLetter = currentMatch[key];
+        const rightIdx = assignedLetter ? LETTERS.indexOf(assignedLetter) : -1;
+        const rightText = rightIdx >= 0 ? right[rightIdx] : null;
+
         html += `
-      <div class="match-assigned${assigned ? ' has-value' : ''}" id="slot-${q.id}-${key}"
+      <div class="match-assigned${assignedLetter ? ' has-value' : ''}" id="slot-${q.id}-${key}"
            onclick="assignToSlot(${q.id}, '${key}')"
            ondragover="onSlotDragOver(event, this)"
            ondragleave="onSlotDragLeave(this)"
            ondrop="onSlotDrop(event, ${q.id}, '${key}')"
            style="cursor: pointer;">
-        <span>${rightItem ? escHtml(rightItem) : '<span style="color:#bbb">—</span>'}</span>
-        ${assigned ? `<button class="match-remove" onclick="event.stopPropagation(); removeMatch(${q.id}, '${key}')">✕</button>` : ''}
+        <span>${rightText ? escHtml(rightText) : '<span style="color:#bbb">—</span>'}</span>
+        ${assignedLetter ? `<button class="match-remove" onclick="event.stopPropagation(); removeMatch(${q.id}, '${key}')">✕</button>` : ''}
       </div>`;
       });
       html += '</div>';
 
-      const shuffledRight = getShuffledRight(q.id, right);
+      // Map right options to letters based on original index
+      const rightPool = right.map((text, idx) => ({ text, letter: LETTERS[idx] }));
+      const shuffledRight = getShuffledRight(q.id, rightPool);
 
       html += '<div class="match-col"><h4>Праворуч</h4><div class="match-right-pool">';
-      shuffledRight.forEach((opt) => {
-        const letter = opt.charAt(0);
-        const isUsed = usedRight.has(letter);
-        const isSelected = _matchSelectedOption && _matchSelectedOption.qId === q.id && _matchSelectedOption.letter === letter;
+      shuffledRight.forEach((optObj) => {
+        const isUsed = usedRightLetters.has(optObj.letter);
+        const isSelected = _matchSelectedOption && _matchSelectedOption.qId === q.id && _matchSelectedOption.letter === optObj.letter;
         html += `<button class="match-option${isUsed ? ' used' : ''}${isSelected ? ' selected' : ''}"
           draggable="${isUsed ? 'false' : 'true'}"
-          ondragstart="onMatchDragStart(event, ${q.id}, '${letter}')"
+          ondragstart="onMatchDragStart(event, ${q.id}, '${optObj.letter}')"
           ondragend="onMatchDragEnd(event)"
-          onclick="selectMatchOption(${q.id}, '${letter}')">${escHtml(opt)}</button>`;
+          onclick="selectMatchOption(${q.id}, '${optObj.letter}')">${escHtml(optObj.text)}</button>`;
       });
       html += '</div></div></div>';
 
