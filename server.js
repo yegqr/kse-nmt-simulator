@@ -745,6 +745,32 @@ app.get('/api/admin/questions/export-zip', requireAdmin, (req, res) => {
   });
 });
 
+// Delete all questions
+app.delete('/api/admin/questions/all', requireAdmin, (req, res) => {
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+    db.run('DELETE FROM questions');
+    db.run('DELETE FROM question_images');
+    db.run('COMMIT', (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+
+      // Also try to clean up uploads directory
+      try {
+        if (fs.existsSync(UPLOADS_DIR)) {
+          const files = fs.readdirSync(UPLOADS_DIR);
+          for (const file of files) {
+            fs.unlinkSync(path.join(UPLOADS_DIR, file));
+          }
+        }
+      } catch (e) {
+        console.error('Error cleaning uploads:', e);
+      }
+
+      res.json({ ok: true });
+    });
+  });
+});
+
 // ─── Admin Questions ──────────────────────────────────────────────────────────
 
 app.get('/api/admin/questions', requireAdmin, (req, res) => {

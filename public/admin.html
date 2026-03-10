@@ -846,6 +846,8 @@
             <button class="btn btn-primary" onclick="exportQuestions()">⬇ Експорт (.json)</button>
             <button class="btn btn-primary" onclick="exportQuestionsZip()" style="background:#2e7d32;">⬇ Експорт з фото
               (.zip)</button>
+            <button class="btn btn-primary" onclick="deleteAllQuestions()" style="background:#c62828;">🗑 Видалити
+              все</button>
             <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
               <input type="file" id="importQFile" accept=".json" style="font-size:12px;">
               <button class="btn btn-secondary" onclick="importQuestions()">⬆ Імпортувати (.json)</button>
@@ -1491,6 +1493,21 @@
 
     async function exportQuestionsZip() {
       window.location.href = '/api/admin/questions/export-zip';
+    }
+
+    async function deleteAllQuestions() {
+      if (!confirm('ВИ ВПЕВНЕНІ? Це видалить УСІ ПИТАННЯ ТА КАРТИНКИ з бази назавжди!')) return;
+      try {
+        const resp = await fetch('/api/admin/questions/all', { method: 'DELETE', credentials: 'include' });
+        if (resp.ok) {
+          alert('Базу очищено');
+          loadQuestions();
+        } else {
+          alert('Помилка при видаленні');
+        }
+      } catch (err) {
+        alert('Помилка з\'єднання');
+      }
     }
 
     async function importQuestions() {
