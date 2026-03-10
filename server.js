@@ -32,6 +32,12 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
 
+// Health check for Railway
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
+// Redirect root to login
+app.get('/', (req, res) => res.redirect('/login.html'));
+
 // ─── Multer: Single question image (legacy) ───────────────────────────────────
 const storage = multer.diskStorage({
   destination: UPLOADS_DIR,
@@ -883,6 +889,16 @@ app.get('/api/admin/dashboard', requireAdmin, (req, res) => {
 init();
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`KSE NMT Simulator running at http://localhost:${PORT}`);
+const HOST = '0.0.0.0'; // Explicitly bind to all interfaces for Railway
+
+app.listen(PORT, HOST, () => {
+  console.log(`KSE NMT Simulator running at http://${HOST}:${PORT}`);
+});
+
+// Global error handlers for better logging on Railway
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
 });

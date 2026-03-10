@@ -460,30 +460,34 @@ function seedQuestions() {
     }
   ];
 
-  for (const q of ukrQuestions) {
-    stmt.run(
-      'ukrainian', q.order, q.type, q.text,
-      q.options || null,
-      q.match_left || null,
-      q.match_right || null,
-      q.correct, q.points || 1,
-      q.instruction || null
-    );
-  }
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+    for (const q of ukrQuestions) {
+      stmt.run(
+        'ukrainian', q.order, q.type, q.text,
+        q.options || null,
+        q.match_left || null,
+        q.match_right || null,
+        q.correct, q.points || 1,
+        q.instruction || null
+      );
+    }
 
-  for (const q of mathQuestions) {
-    stmt.run(
-      'math', q.order, q.type, q.text,
-      q.options || null,
-      q.match_left || null,
-      q.match_right || null,
-      q.correct, q.points || 1,
-      q.instruction || null
-    );
-  }
-
-  stmt.finalize();
-  console.log('Seeded 52 questions (30 Ukrainian + 22 Math, real NMT format).');
+    for (const q of mathQuestions) {
+      stmt.run(
+        'math', q.order, q.type, q.text,
+        q.options || null,
+        q.match_left || null,
+        q.match_right || null,
+        q.correct, q.points || 1,
+        q.instruction || null
+      );
+    }
+    db.run('COMMIT', () => {
+      stmt.finalize();
+      console.log('Seeded 52 questions (30 Ukrainian + 22 Math, real NMT format).');
+    });
+  });
 }
 
 module.exports = { db, init };
