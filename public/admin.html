@@ -840,6 +840,18 @@
         <div style="margin-bottom:14px;">
           <button class="btn btn-primary" onclick="openAddQuestion()">+ Додати питання</button>
         </div>
+        <div class="card" style="margin-bottom:20px;">
+          <h3>Керування базою</h3>
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="exportQuestions()">⬇ Експортувати базу (.json)</button>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="file" id="importQFile" accept=".json" style="font-size:12px;">
+              <button class="btn btn-secondary" onclick="importQuestions()">⬆ Імпортувати базу</button>
+            </div>
+          </div>
+          <p style="font-size:11px; color:#c62828; margin-top:10px;">⚠️ УВАГА: Імпорт повністю замінює наявні питання в
+            базі!</p>
+        </div>
         <div class="card">
           <table id="questionsTable">
             <thead>
@@ -1457,6 +1469,49 @@
       if (!confirm(`Видалити питання #${id}?`)) return;
       const resp = await fetch(`/api/admin/questions/${id}`, { method: 'DELETE', credentials: 'include' });
       if (resp.ok) loadQuestions();
+    }
+
+    async function exportQuestions() {
+      try {
+        const resp = await fetch('/api/admin/questions/export', { credentials: 'include' });
+        if (!resp.ok) throw new Error('Помилка сервера');
+        const data = await resp.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kse_questions_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+      } catch (err) {
+        alert('Не вдалося експортувати: ' + err.message);
+      }
+    }
+
+    async function importQuestions() {
+      const file = document.getElementById('importQFile').files[0];
+      if (!file) { alert('Оберіть JSON файл'); return; }
+      if (!confirm('Ви впевнені? Це видалить всі наявні питання та замінить їх даними з файлу!')) return;
+
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const resp = await fetch('/api/admin/questions/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+          credentials: 'include'
+        });
+        if (resp.ok) {
+          const res = await resp.json();
+          alert(`Успішно імпортовано ${res.count} питань!`);
+          loadQuestions();
+        } else {
+          const d = await resp.json();
+          alert('Помилка імпорту: ' + (d.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Некоректний JSON файл: ' + err.message);
+      }
     }
 
     // ─── Reference Materials ──────────────────────────────────────────────────────

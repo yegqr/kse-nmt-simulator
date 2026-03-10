@@ -975,12 +975,15 @@
     let pingInterval = null;
     let timerHidden = false;
     let mathRefLoaded = false;
+    let isAdmin = false;
 
     // ─── Init ─────────────────────────────────────────────────────────────────────
     async function init() {
       try {
         const meResp = await fetch('/api/me', { credentials: 'include' });
         if (!meResp.ok) { window.location.href = '/login.html'; return; }
+        const meData = await meResp.json();
+        isAdmin = meData.is_admin;
 
         const sessResp = await fetch('/api/exam/session', { credentials: 'include' });
         if (!sessResp.ok) {
@@ -997,12 +1000,22 @@
         }
 
         // Load questions and images in parallel
-        const [qResp, imgResp] = await Promise.all([
+        const [qResp, imgResp, ansResp] = await Promise.all([
           fetch('/api/exam/questions', { credentials: 'include' }),
-          fetch('/api/exam/question-images', { credentials: 'include' })
+          fetch('/api/exam/question-images', { credentials: 'include' }),
+          fetch(`/api/exam/answers?session_id=${sessionId}`, { credentials: 'include' })
         ]);
         questions = await qResp.json();
         if (imgResp.ok) questionImages = await imgResp.json();
+
+        // Restore saved answers
+        if (ansResp.ok) {
+          const saved = await ansResp.json();
+          for (const qid in saved) {
+            answers[qid] = saved[qid];
+            savedAnswers[qid] = true;
+          }
+        }
 
         buildGrid();
         switchSubject('ukrainian');
@@ -1093,6 +1106,11 @@
 
     // ─── Timer ────────────────────────────────────────────────────────────────────
     function startTimer() {
+      if (isAdmin) {
+        document.getElementById('timerDisplay').textContent = 'ADMIN';
+        document.getElementById('timerDisplay').style.background = '#27ae60';
+        return; // No timer for admin
+      }
       updateTimerDisplay();
       timerInterval = setInterval(() => {
         timeRemaining--;

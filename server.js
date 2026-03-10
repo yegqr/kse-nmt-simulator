@@ -74,7 +74,7 @@ function logEvent(sessionId, participantId, eventType, payload) {
 }
 
 function requireParticipant(req, res, next) {
-  if (!req.session.participant) return res.status(401).json({ error: 'Не авторизовано' });
+  if (!req.session.participant && !req.session.admin) return res.status(401).json({ error: 'Не авторизовано' });
   next();
 }
 
@@ -85,7 +85,14 @@ function requireAdmin(req, res, next) {
 
 // Normalize a string answer for math open questions (comma→period)
 function normalizeOpenMath(str) {
-  return String(str).trim().toLowerCase().replace(/,/g, '.');
+  if (str === null || str === undefined) return "";
+  const normalized = String(str).trim().toLowerCase().replace(/,/g, '.');
+  // If it's a valid number, parse and stringify to remove trailing zeros/dots (e.g. "16.0" -> "16")
+  const num = parseFloat(normalized);
+  if (!isNaN(num) && isFinite(num)) {
+    return String(num);
+  }
+  return normalized;
 }
 
 function calculateScore(questions, answers) {
@@ -185,7 +192,7 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/me', requireParticipant, (req, res) => {
-  res.json({ participant: req.session.participant });
+  res.json({ participant: req.session.participant, is_admin: !!req.session.admin });
 });
 
 // ─── Exam Routes ──────────────────────────────────────────────────────────────
@@ -280,6 +287,27 @@ app.get('/api/exam/questions', requireParticipant, (req, res) => {
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
+    }
+  );
+});
+
+app.get('/api/exam/answers', requireParticipant, (req, res) => {
+  const { session_id } = req.query;
+  const p = req.session.participant;
+
+  if (!session_id) return res.status(400).json({ error: 'session_id обов\'язковий' });
+
+  db.all(
+    `SELECT question_id, answer FROM answers WHERE session_id = ?`,
+    [session_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      const map = {};
+      for (const row of rows) {
+        try { map[row.question_id] = JSON.parse(row.answer); }
+        catch { map[row.question_id] = row.answer; }
+      }
+      res.json(map);
     }
   );
 });
@@ -435,6 +463,13 @@ app.post('/api/admin/login', (req, res) => {
   const { login, password } = req.body;
   if (login === config.admin.login && password === config.admin.password) {
     req.session.admin = true;
+    // Also create a virtual participant for the admin to allow testing the exam
+    req.session.participant = {
+      id: 0, // Admin always has ID 0
+      login: 'admin',
+      full_name: 'Administrator (Testing Mode)',
+      seat_number: 'ADMIN'
+    };
     return res.json({ ok: true });
   }
   res.status(401).json({ error: 'Невірний логін або пароль' });

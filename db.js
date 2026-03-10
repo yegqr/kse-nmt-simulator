@@ -103,13 +103,16 @@ function seedIfEmpty() {
     // Migrate old 66-question DB or seed empty DB
     if (row.cnt === 0) {
       seedQuestions();
-    } else if (row.cnt === 66) {
+    }
+    /* 
+    else if (row.cnt === 66) {
       // Old format — delete and reseed with correct NMT format
       db.run('DELETE FROM questions', () => {
         console.log('Migrating to new NMT format (52 questions)...');
         seedQuestions();
       });
     }
+    */
     // else: already seeded with new format, skip
   });
 }
