@@ -843,10 +843,12 @@
         <div class="card" style="margin-bottom:20px;">
           <h3>Керування базою</h3>
           <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-            <button class="btn btn-primary" onclick="exportQuestions()">⬇ Експортувати базу (.json)</button>
-            <div style="display:flex; align-items:center; gap:8px;">
+            <button class="btn btn-primary" onclick="exportQuestions()">⬇ Експорт (.json)</button>
+            <button class="btn btn-primary" onclick="exportQuestionsZip()" style="background:#2e7d32;">⬇ Експорт з фото
+              (.zip)</button>
+            <div style="display:flex; align-items:center; gap:8px; margin-left:auto;">
               <input type="file" id="importQFile" accept=".json" style="font-size:12px;">
-              <button class="btn btn-secondary" onclick="importQuestions()">⬆ Імпортувати базу</button>
+              <button class="btn btn-secondary" onclick="importQuestions()">⬆ Імпортувати (.json)</button>
             </div>
           </div>
           <p style="font-size:11px; color:#c62828; margin-top:10px;">⚠️ УВАГА: Імпорт повністю замінює наявні питання в
@@ -1485,6 +1487,10 @@
       } catch (err) {
         alert('Не вдалося експортувати: ' + err.message);
       }
+    }
+
+    async function exportQuestionsZip() {
+      window.location.href = '/api/admin/questions/export-zip';
     }
 
     async function importQuestions() {

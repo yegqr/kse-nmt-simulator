@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const ConnectSQLite3 = require('connect-sqlite3');
+const archiver = require('archiver');
 const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
@@ -25,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(UPLOADS_DIR));
 
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.db', dir: DATA_DIR }),
+  store: new SQLiteStore({ db: 'sessions.db', dir: __dirname }),
   secret: 'kse-nmt-secret-2026',
   resave: false,
   saveUninitialized: false,
@@ -171,6 +172,21 @@ app.put('/api/admin/settings/access', requireAdmin, (req, res) => {
 
 app.post('/api/login', (req, res) => {
   const { login, password } = req.body;
+
+  // Check if it's an admin login
+  if (login === config.admin.login && password === config.admin.password) {
+    req.session.admin = true;
+    req.session.participant = {
+      id: 0,
+      login: 'admin',
+      full_name: 'Administrator (Testing Mode)',
+      seat_number: 'ADMIN'
+    };
+    logEvent(null, 0, 'admin_login_as_user', { login });
+    return res.json({ participant: req.session.participant, examSession: null, is_admin: true });
+  }
+
+  // Otherwise check participants
   db.get(
     `SELECT * FROM participants WHERE login = ? AND password = ?`,
     [login, password],
@@ -178,6 +194,10 @@ app.post('/api/login', (req, res) => {
       if (err || !participant) {
         return res.status(401).json({ error: 'Невірний логін або пароль' });
       }
+
+      // Clear admin status if logging in as regular participant
+      delete req.session.admin;
+
       req.session.participant = { id: participant.id, login: participant.login, full_name: participant.full_name, seat_number: participant.seat_number };
       logEvent(null, participant.id, 'login', { login });
 
@@ -185,7 +205,7 @@ app.post('/api/login', (req, res) => {
         `SELECT * FROM exam_sessions WHERE participant_id = ? AND status = 'active' ORDER BY started_at DESC LIMIT 1`,
         [participant.id],
         (err2, examSession) => {
-          res.json({ participant: req.session.participant, examSession: examSession || null });
+          res.json({ participant: req.session.participant, examSession: examSession || null, is_admin: false });
         }
       );
     }
@@ -695,6 +715,32 @@ app.post('/api/admin/questions/import', requireAdmin, (req, res) => {
     db.run('COMMIT', (err) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ ok: true, count: questions.length });
+    });
+  });
+});
+
+// ZIP Export (JSON + Images)
+app.get('/api/admin/questions/export-zip', requireAdmin, (req, res) => {
+  db.all('SELECT * FROM questions', [], (err, questions) => {
+    if (err) return res.status(500).json({ error: err.message });
+    db.all('SELECT * FROM question_images', [], (err2, images) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      res.attachment(`kse_export_${Date.now()}.zip`);
+
+      archive.on('error', (err) => { res.status(500).send({ error: err.message }); });
+      archive.pipe(res);
+
+      // JSON data
+      archive.append(JSON.stringify({ questions, images }, null, 2), { name: 'questions.json' });
+
+      // Images
+      if (fs.existsSync(UPLOADS_DIR)) {
+        archive.directory(UPLOADS_DIR, 'uploads');
+      }
+
+      archive.finalize();
     });
   });
 });
