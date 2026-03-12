@@ -452,6 +452,9 @@ function seedQuestions() {
       correct: '15',
       points: 2
     },
+    {
+      order: 22, type: 'open',
+      text: 'На скільки відсотків число 75 більше за число 60? Запишіть відповідь числом.',
       correct: '25',
       points: 2
     },
