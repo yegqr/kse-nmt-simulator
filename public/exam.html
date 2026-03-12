@@ -11,6 +11,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
     onload="renderMathContent()"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -1299,7 +1300,8 @@
       let html = '';
 
       if (q.instruction) {
-        html += `<div class="q-instruction">${escHtml(q.instruction)}</div>`;
+        // Use marked for markdown support
+        html += `<div class="q-instruction">${typeof marked !== 'undefined' ? marked.parse(q.instruction) : escHtml(q.instruction)}</div>`;
       }
 
       // Images (legacy single + multiple)
@@ -1316,7 +1318,8 @@
         html += '</div>';
       }
 
-      html += `<div class="q-text">${escHtml(q.text)}</div>`;
+      const qTextHtml = typeof marked !== 'undefined' ? marked.parse(q.text) : escHtml(q.text);
+      html += `<div class="q-text">${qTextHtml}</div>`;
 
       if (q.type === 'single') html += renderSingle(q);
       else if (q.type === 'multiple') html += renderMultiple(q);
