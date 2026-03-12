@@ -1617,7 +1617,9 @@
     }
 
     // ─── Save answer ──────────────────────────────────────────────────────────────
+    // ─── Save answer ──────────────────────────────────────────────────────────────
     async function saveAnswer(qId) {
+      console.log('Saving answer for question:', qId);
       const q = questions.find(q => q.id === qId);
       let answer = answers[qId];
 
@@ -1626,7 +1628,12 @@
         if (inp) { answer = inp.value; answers[qId] = answer; }
       }
 
-      if (answer === undefined || answer === null || answer === '') return;
+      // If answer is empty string, we still want to allow saving if possible (clearing answer)
+      // but let's keep it defined. For match q, it's an object.
+      if (answer === undefined || answer === null) {
+        console.warn('No answer found to save for qId:', qId);
+        return;
+      }
 
       try {
         const resp = await fetch('/api/exam/answer', {
@@ -1643,11 +1650,95 @@
           const fb = document.getElementById('saveFeedback');
           if (fb) { fb.style.display = 'inline'; setTimeout(() => { if (fb) fb.style.display = 'none'; }, 2000); }
           updateGrid();
+        } else {
+          const err = await resp.json();
+          console.error('Save failed:', err);
+          alert('Помилка збереження: ' + (err.error || 'невідома помилка'));
         }
       } catch (e) {
         console.error('Save error:', e);
+        alert('Помилка з\'єднання при збереженні');
       }
     }
+
+    // ─── Security Script (Safe Exam Browser Mode) ─────────────────────────────────
+    function logViolation(eventType) {
+      if (!sessionId || isAdmin) return;
+      fetch('/api/exam/violation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType,
+          timestamp: Date.now(),
+          session_id: sessionId
+        }),
+        credentials: 'include'
+      }).catch(e => console.error('Violation log error:', e));
+    }
+
+    function enterFullscreen() {
+      const doc = document.documentElement;
+      try {
+        if (doc.requestFullscreen) doc.requestFullscreen().catch(() => {});
+        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+        else if (doc.mozRequestFullScreen) doc.mozRequestFullScreen();
+        else if (doc.msRequestFullscreen) doc.msRequestFullscreen();
+      } catch(e) {}
+    }
+
+    // FR-1. Forced Fullscreen & Exit Detection
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement && !isAdmin) {
+        alert('Порушення! Ви вийшли з повноекранного режиму. Будь ласка, поверніться назад.');
+        logViolation('fullscreen_exit');
+        enterFullscreen();
+      }
+    });
+
+    // FR-2. Detection of Tab/Window Switch
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && !isAdmin) {
+        logViolation('tab_switch');
+      }
+    });
+
+    // FR-3 & FR-4. Block Clipboard & Context Menu
+    document.addEventListener('copy', (e) => { if (!isAdmin) { e.preventDefault(); logViolation('copy_attempt'); } });
+    document.addEventListener('paste', (e) => { if (!isAdmin) { e.preventDefault(); logViolation('paste_attempt'); } });
+    document.addEventListener('cut', (e) => { if (!isAdmin) { e.preventDefault(); logViolation('cut_attempt'); } });
+    document.addEventListener('contextmenu', (e) => { if (!isAdmin) e.preventDefault(); });
+
+    // FR-5. Restricted Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (isAdmin) return;
+      const forbiddenKeys = ['F12'];
+      const ctrlCmd = e.ctrlKey || e.metaKey;
+      
+      if (forbiddenKeys.includes(e.key)) {
+        e.preventDefault();
+        logViolation('shortcut_forbidden_' + e.key);
+        return false;
+      }
+      
+      if (ctrlCmd) {
+        const forbiddenShortcuts = ['c', 'v', 'u', 's', 'a', 'p'];
+        if (forbiddenShortcuts.includes(e.key.toLowerCase())) {
+          e.preventDefault();
+          logViolation('shortcut_forbidden_ctrl+' + e.key);
+          return false;
+        }
+      }
+    });
+
+    // Auto-enter fullscreen on first click
+    document.addEventListener('click', () => {
+      if (!document.fullscreenElement && !isAdmin) enterFullscreen();
+    }, { once: false });
+
+    // Initialize security on page load
+    window.addEventListener('load', () => {
+      setTimeout(enterFullscreen, 1000);
+    });
 
     // ─── Navigation ───────────────────────────────────────────────────────────────
     function navigate(dir) {

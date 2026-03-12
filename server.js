@@ -421,6 +421,13 @@ app.post('/api/exam/answer', requireParticipant, (req, res) => {
   );
 });
 
+app.post('/api/exam/violation', requireParticipant, (req, res) => {
+  const { eventType, timestamp, session_id } = req.body;
+  const p = req.session.participant;
+  logEvent(session_id || 'manual', p.id, 'violation', { eventType, timestamp });
+  res.json({ ok: true });
+});
+
 app.post('/api/exam/ping', requireParticipant, (req, res) => {
   const { session_id, time_remaining_seconds } = req.body;
   const p = req.session.participant;
