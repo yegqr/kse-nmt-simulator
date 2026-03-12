@@ -107,42 +107,45 @@ function calculateScore(questions, answers) {
 
   for (const q of questions) {
     const ans = answers[q.id];
-    if (!ans) continue;
+    if (ans === undefined || ans === null) continue;
 
-    let correct = false;
+    let pts = 0;
     if (q.type === 'single') {
-      correct = (ans.trim() === q.correct_answer.trim());
+      if (String(ans).trim() === String(q.correct_answer).trim()) {
+        pts = q.points || 1;
+      }
     } else if (q.type === 'multiple') {
       try {
-        const userArr = JSON.parse(ans).sort();
-        const corrArr = JSON.parse(q.correct_answer).sort();
-        correct = JSON.stringify(userArr) === JSON.stringify(corrArr);
-      } catch { correct = false; }
+        const userArr = (Array.isArray(ans) ? ans : JSON.parse(ans)).map(String).sort();
+        const corrArr = JSON.parse(q.correct_answer).map(String).sort();
+        if (JSON.stringify(userArr) === JSON.stringify(corrArr)) {
+          pts = q.points || 1;
+        }
+      } catch (e) {}
     } else if (q.type === 'match') {
       try {
-        const userMap = JSON.parse(ans);
+        const userMap = typeof ans === 'object' ? ans : JSON.parse(ans);
         const corrMap = JSON.parse(q.correct_answer);
-        let pairs = 0;
         for (const key of Object.keys(corrMap)) {
-          if (userMap[key] === corrMap[key]) pairs++;
+          if (userMap[key] === corrMap[key]) {
+            pts++;
+          }
         }
-        if (q.subject === 'ukrainian') scoreUkr += pairs;
-        else scoreMath += pairs;
-        continue;
-      } catch { correct = false; }
+      } catch (e) {}
     } else if (q.type === 'open') {
+      let isCorrect;
       if (q.subject === 'math') {
-        correct = normalizeOpenMath(ans) === normalizeOpenMath(q.correct_answer);
+        isCorrect = normalizeOpenMath(ans) === normalizeOpenMath(q.correct_answer);
       } else {
-        correct = (ans.trim().toLowerCase() === q.correct_answer.trim().toLowerCase());
+        isCorrect = String(ans).trim().toLowerCase() === String(q.correct_answer).trim().toLowerCase();
+      }
+      if (isCorrect) {
+        pts = q.points || 1;
       }
     }
 
-    if (correct) {
-      const pts = q.points || 1;
-      if (q.subject === 'ukrainian') scoreUkr += pts;
-      else scoreMath += pts;
-    }
+    if (q.subject === 'ukrainian') scoreUkr += pts;
+    else scoreMath += pts;
   }
 
   return { scoreUkr, scoreMath };
@@ -419,41 +422,7 @@ app.post('/api/exam/finish', requireParticipant, (req, res) => {
               catch { answerMap[a.question_id] = a.answer; }
             }
 
-            let scoreUkr = 0, scoreMath = 0;
-            for (const q of questions) {
-              const ans = answerMap[q.id];
-              if (ans === undefined || ans === null) continue;
-
-              let pts = 0;
-              if (q.type === 'single') {
-                if (String(ans).trim() === String(q.correct_answer).trim()) pts = q.points || 1;
-              } else if (q.type === 'multiple') {
-                try {
-                  const userArr = (Array.isArray(ans) ? ans : JSON.parse(ans)).map(String).sort();
-                  const corrArr = JSON.parse(q.correct_answer).map(String).sort();
-                  if (JSON.stringify(userArr) === JSON.stringify(corrArr)) pts = q.points || 1;
-                } catch { }
-              } else if (q.type === 'match') {
-                try {
-                  const userMap = typeof ans === 'object' ? ans : JSON.parse(ans);
-                  const corrMap = JSON.parse(q.correct_answer);
-                  for (const key of Object.keys(corrMap)) {
-                    if (userMap[key] === corrMap[key]) pts++;
-                  }
-                } catch { }
-              } else if (q.type === 'open') {
-                let isCorrect;
-                if (q.subject === 'math') {
-                  isCorrect = normalizeOpenMath(ans) === normalizeOpenMath(q.correct_answer);
-                } else {
-                  isCorrect = String(ans).trim().toLowerCase() === String(q.correct_answer).trim().toLowerCase();
-                }
-                if (isCorrect) pts = q.points || 1;
-              }
-
-              if (q.subject === 'ukrainian') scoreUkr += pts;
-              else scoreMath += pts;
-            }
+            const { scoreUkr, scoreMath } = calculateScore(questions, answerMap);
 
             db.run(
               `UPDATE exam_sessions SET status = 'finished', finished_at = ?, score_ukrainian = ?, score_math = ? WHERE id = ?`,
