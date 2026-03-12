@@ -548,13 +548,14 @@
         if (!resp.ok) { window.location.href = '/login.html'; return; }
         const data = await resp.json();
         participant = data.participant;
+        const isAdmin = !!data.is_admin;
         document.getElementById('userName').textContent = participant.full_name;
 
         // Check test access
         const settingsResp = await fetch('/api/settings', { credentials: 'include' });
         if (settingsResp.ok) {
           const settings = await settingsResp.json();
-          if (!settings.test_access_enabled) {
+          if (!settings.test_access_enabled && !isAdmin) {
             document.getElementById('accessClosedBlock').style.display = 'block';
           }
         }
@@ -563,7 +564,7 @@
         const sessResp = await fetch('/api/exam/session', { credentials: 'include' });
         if (sessResp.ok) {
           const sess = await sessResp.json();
-          if (sess.status === 'finished') {
+          if (sess.status === 'finished' && !isAdmin) {
             document.getElementById('finishedMsg').style.display = 'block';
             const btn = document.getElementById('startBtn');
             btn.disabled = true;

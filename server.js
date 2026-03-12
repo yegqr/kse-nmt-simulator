@@ -237,7 +237,8 @@ app.post('/api/exam/start', requireParticipant, (req, res) => {
       `SELECT * FROM exam_sessions WHERE participant_id = ? AND status = 'active' ORDER BY started_at DESC LIMIT 1`,
       [p.id],
       (err, existing) => {
-        if (existing) {
+        // Admins can always start a new session, so we don't return early for them here
+        if (existing && !req.session.admin) {
           const totalSec = config.exam.duration_minutes * 60;
           const startedMs = parseInt(existing.started_at);
           const elapsed = Math.floor((Date.now() - startedMs) / 1000);
@@ -245,7 +246,8 @@ app.post('/api/exam/start', requireParticipant, (req, res) => {
           return res.json({ session_id: existing.id, time_remaining_seconds: remaining, started_at: existing.started_at });
         }
 
-        if (!config.allow_retake) {
+        // Allow retakes for admins regardless of config
+        if (!config.allow_retake && !req.session.admin) {
           db.get(
             `SELECT * FROM exam_sessions WHERE participant_id = ? AND status = 'finished' LIMIT 1`,
             [p.id],
