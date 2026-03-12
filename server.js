@@ -102,6 +102,8 @@ function normalizeOpenMath(str) {
   return normalized;
 }
 
+const LETTERS = ['А', 'Б', 'В', 'Г', 'Д'];
+
 function calculateScore(questions, answers) {
   let scoreUkr = 0, scoreMath = 0;
 
@@ -111,8 +113,27 @@ function calculateScore(questions, answers) {
 
     let pts = 0;
     if (q.type === 'single') {
-      if (String(ans).trim() === String(q.correct_answer).trim()) {
+      const userSelected = String(ans).trim();
+      const correctText = String(q.correct_answer).trim();
+      
+      // Case 1: Direct match (e.g. user selected 'А' and correct is 'А')
+      if (userSelected === correctText) {
         pts = q.points || 1;
+      } else {
+        // Case 2: Letter-to-text mapping (e.g. user selected 'А' and correct is '40')
+        try {
+          const opts = JSON.parse(q.options || '[]');
+          const idx = LETTERS.indexOf(userSelected);
+          if (idx >= 0 && opts[idx]) {
+            const optText = String(opts[idx]).trim();
+            // Check if correct_answer matches the full option text or the text without prefix "А) "
+            const cleanOptText = optText.replace(/^[А-Д]\)\s*/, '').trim();
+            const cleanCorrect = correctText.replace(/^[А-Д]\)\s*/, '').trim();
+            if (cleanOptText === cleanCorrect || optText === correctText) {
+              pts = q.points || 1;
+            }
+          }
+        } catch (e) {}
       }
     } else if (q.type === 'multiple') {
       try {
@@ -126,9 +147,25 @@ function calculateScore(questions, answers) {
       try {
         const userMap = typeof ans === 'object' ? ans : JSON.parse(ans);
         const corrMap = JSON.parse(q.correct_answer);
+        const rightOpts = JSON.parse(q.match_right || '[]');
+
         for (const key of Object.keys(corrMap)) {
-          if (userMap[key] === corrMap[key]) {
+          const userVal = userMap[key]; // e.g. 'А'
+          const correctVal = corrMap[key]; // e.g. 'пряма...' or 'А'
+          
+          if (userVal === correctVal) {
             pts++;
+          } else {
+            // Map letter to text if needed
+            const idx = LETTERS.indexOf(userVal);
+            if (idx >= 0 && rightOpts[idx]) {
+              const optText = String(rightOpts[idx]).trim();
+              const cleanOptText = optText.replace(/^[А-Д]\.\s*/, '').trim();
+              const cleanCorrect = String(correctVal).replace(/^[А-Д]\.\s*/, '').trim();
+              if (cleanOptText === cleanCorrect || optText === correctVal) {
+                pts++;
+              }
+            }
           }
         }
       } catch (e) {}

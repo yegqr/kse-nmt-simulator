@@ -1353,7 +1353,7 @@
       const opts = JSON.parse(q.options || '[]');
       let html = '<ul class="options-list">';
       opts.forEach((opt, i) => {
-        const letter = opt.charAt(0);
+        const letter = LETTERS[i] || '?';
         html += `
       <li>
         <label id="lbl-${i}" onclick="selectSingle(${q.id}, '${letter}', ${i})">
@@ -1371,7 +1371,7 @@
       let html = `<p style="font-size:12px;color:#888;margin-bottom:12px;font-style:italic;">Оберіть усі правильні відповіді</p>`;
       html += '<ul class="options-list">';
       opts.forEach((opt, i) => {
-        const letter = opt.charAt(0);
+        const letter = LETTERS[i] || '?';
         html += `
       <li>
         <label id="lbl-${i}" onclick="toggleMultiple(${q.id}, '${letter}', ${i})">
