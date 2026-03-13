@@ -820,7 +820,8 @@
 
     u {
       text-decoration: underline;
-      text-underline-offset: 1px;
+      text-underline-offset: 0px;
+      text-decoration-skip-ink: none;
     }
 
     @media (max-width: 700px) {
@@ -873,7 +874,7 @@
       <!-- Sub tabs -->
       <div class="sub-tabs">
         <span class="sub-tab active" data-panel="examPanel" onclick="switchSubTab(this)">Іспит</span>
-        <span class="sub-tab" data-panel="mathRefPanel" onclick="switchSubTab(this)">Математика: довідкові
+        <span class="sub-tab" style="display:none;" data-panel="mathRefPanel" onclick="switchSubTab(this)">Математика: довідкові
           матеріали</span>
         <span class="sub-tab" data-panel="instructionPanel" onclick="switchSubTab(this)">Інструкція</span>
       </div>
@@ -1321,7 +1322,7 @@
       if (q.image_path) allImages.push({ image_path: q.image_path });
       allImages.push(...extraImages);
 
-      if (allImages.length > 0) {
+      if (allImages.length > 0 && q.subject !== 'math') {
         html += '<div class="q-images">';
         for (const img of allImages) {
           html += `<img class="q-image" src="/${escHtml(img.image_path)}" alt="Зображення до завдання" onclick="openLightbox('/${escHtml(img.image_path)}')">`;
