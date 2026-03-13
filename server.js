@@ -715,7 +715,12 @@ app.post('/api/admin/questions/import', requireAdmin, (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     for (const q of questions) {
-      qStmt.run(q.id, q.subject, q.order_num, q.type, q.text, q.options, q.match_left, q.match_right, q.correct_answer, q.image_path, q.points, q.instruction);
+      const options = typeof q.options === 'string' ? q.options : JSON.stringify(q.options || []);
+      const match_left = typeof q.match_left === 'string' ? q.match_left : JSON.stringify(q.match_left || []);
+      const match_right = typeof q.match_right === 'string' ? q.match_right : JSON.stringify(q.match_right || []);
+      const correct_answer = typeof q.correct_answer === 'string' ? q.correct_answer : JSON.stringify(q.correct_answer);
+
+      qStmt.run(q.id, q.subject, q.order_num, q.type, q.text, options, match_left, match_right, correct_answer, q.image_path, q.points, q.instruction);
     }
     qStmt.finalize();
 

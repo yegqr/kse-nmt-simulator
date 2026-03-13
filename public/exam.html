@@ -986,6 +986,12 @@
 
     const LETTERS = ['А', 'Б', 'В', 'Г', 'Д'];
 
+    function formatNmtText(text) {
+      if (!text) return '';
+      // Replace _x_ with <u>x</u>
+      return text.replace(/_([^_]+)_/g, '<u>$1</u>');
+    }
+
     function renderMathContent() {
       if (typeof renderMathInElement === 'function') {
         renderMathInElement(document.body, {
@@ -1318,7 +1324,7 @@
         html += '</div>';
       }
 
-      const qTextHtml = typeof marked !== 'undefined' ? marked.parse(q.text) : escHtml(q.text);
+      const qTextHtml = typeof marked !== 'undefined' ? marked.parse(formatNmtText(q.text)) : formatNmtText(q.text);
       html += `<div class="q-text">${qTextHtml}</div>`;
 
       if (q.type === 'single') html += renderSingle(q);
@@ -1358,7 +1364,7 @@
       <li>
         <label id="lbl-${i}" onclick="selectSingle(${q.id}, '${letter}', ${i})">
           <input type="radio" name="q${q.id}" value="${letter}">
-          ${escHtml(opt)}
+          ${formatNmtText(opt)}
         </label>
       </li>`;
       });
@@ -1376,7 +1382,7 @@
       <li>
         <label id="lbl-${i}" onclick="toggleMultiple(${q.id}, '${letter}', ${i})">
           <input type="checkbox" name="q${q.id}" value="${letter}">
-          ${escHtml(opt)}
+          ${formatNmtText(opt)}
         </label>
       </li>`;
       });

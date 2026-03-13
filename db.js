@@ -97,24 +97,67 @@ function init() {
   });
 }
 
+const PREFERRED_JSON = path.join(__dirname, 'kse_questions_merged(2).json');
+
 function seedIfEmpty() {
   db.get('SELECT COUNT(*) as cnt FROM questions', (err, row) => {
     if (err) return;
-    // Migrate old 66-question DB or seed empty DB
     if (row.cnt === 0) {
-      seedQuestions();
-    }
-    /* 
-    else if (row.cnt === 66) {
-      // Old format — delete and reseed with correct NMT format
-      db.run('DELETE FROM questions', () => {
-        console.log('Migrating to new NMT format (52 questions)...');
+      if (fs.existsSync(PREFERRED_JSON)) {
+        console.log('Seeding from preferred JSON:', PREFERRED_JSON);
+        seedFromJson(PREFERRED_JSON);
+      } else {
+        console.log('Seeding from hardcoded questions...');
         seedQuestions();
-      });
+      }
     }
-    */
-    // else: already seeded with new format, skip
   });
+}
+
+function seedFromJson(jsonPath) {
+  try {
+    const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const questions = data.questions || [];
+    const images = data.images || [];
+
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+      
+      const qStmt = db.prepare(`
+        INSERT INTO questions (id, subject, order_num, type, text, options, match_left, match_right, correct_answer, image_path, points, instruction)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      for (const q of questions) {
+        // Ensure all arrays/objects are stringified for SQLite
+        const options = typeof q.options === 'string' ? q.options : JSON.stringify(q.options || []);
+        const match_left = typeof q.match_left === 'string' ? q.match_left : JSON.stringify(q.match_left || []);
+        const match_right = typeof q.match_right === 'string' ? q.match_right : JSON.stringify(q.match_right || []);
+        const correct_answer = typeof q.correct_answer === 'string' ? q.correct_answer : JSON.stringify(q.correct_answer);
+
+        qStmt.run(
+          q.id, q.subject, q.order_num, q.type, q.text,
+          options, match_left, match_right, correct_answer,
+          q.image_path || null, q.points || 1, q.instruction || null
+        );
+      }
+      qStmt.finalize();
+
+      const iStmt = db.prepare(`INSERT INTO question_images (id, question_id, image_path, order_num) VALUES (?, ?, ?, ?)`);
+      for (const img of images) {
+        iStmt.run(img.id, img.question_id, img.image_path, img.order_num);
+      }
+      iStmt.finalize();
+
+      db.run('COMMIT', (err) => {
+        if (err) console.error('Error seeding from JSON:', err);
+        else console.log(`Seeded ${questions.length} questions and ${images.length} images from JSON.`);
+      });
+    });
+  } catch (e) {
+    console.error('Failed to seed from JSON:', e);
+    seedQuestions();
+  }
 }
 
 function seedQuestions() {
