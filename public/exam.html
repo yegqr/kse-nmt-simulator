@@ -991,10 +991,14 @@
 
     const LETTERS = ['А', 'Б', 'В', 'Г', 'Д'];
 
-    function formatNmtText(text) {
+    function formatNmtText(text, subject) {
       if (!text) return '';
-      // Replace _x_ with <u>x</u> only if it appears as a separate word to avoid breaking MathJax/LaTeX
-      return text.replace(/(^|\s)_([^_]+)_(?=\s|[.,:;!?]|$)/g, '$1<u>$2</u>');
+      if (subject === 'math') {
+        // Replace _x_ with <u>x</u> only if it appears as a separate word to avoid breaking MathJax/LaTeX
+        return text.replace(/(^|\s)_([^_]+)_(?=\s|[.,:;!?]|$)/g, '$1<u>$2</u>');
+      }
+      // Replace _x_ with <u>x</u> anywhere for Ukrainian letters
+      return text.replace(/_([^_]+)_/g, '<u>$1</u>');
     }
 
     function renderMathContent() {
@@ -1333,7 +1337,7 @@
       if (q.subject === 'math') {
         textToRender = textToRender.replace(/\(див\. рисунок\)|\(рисунок\)|\(див\. рис\.\)/gi, '').trim();
       }
-      const qTextHtml = typeof marked !== 'undefined' ? marked.parse(formatNmtText(textToRender)) : formatNmtText(textToRender);
+      const qTextHtml = typeof marked !== 'undefined' ? marked.parse(formatNmtText(textToRender, q.subject)) : formatNmtText(textToRender, q.subject);
       html += `<div class="q-text">${qTextHtml}</div>`;
 
       if (q.type === 'single') html += renderSingle(q);
@@ -1373,7 +1377,7 @@
       <li>
         <label id="lbl-${i}" onclick="selectSingle(${q.id}, '${letter}', ${i})">
           <input type="radio" name="q${q.id}" value="${letter}">
-          <span>${formatNmtText(opt)}</span>
+          <span>${formatNmtText(opt, q.subject)}</span>
         </label>
       </li>`;
       });
@@ -1391,7 +1395,7 @@
       <li>
         <label id="lbl-${i}" onclick="toggleMultiple(${q.id}, '${letter}', ${i})">
           <input type="checkbox" name="q${q.id}" value="${letter}">
-          <span>${formatNmtText(opt)}</span>
+          <span>${formatNmtText(opt, q.subject)}</span>
         </label>
       </li>`;
       });
