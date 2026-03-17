@@ -993,8 +993,8 @@
 
     function formatNmtText(text) {
       if (!text) return '';
-      // Replace _x_ with <u>x</u>
-      return text.replace(/_([^_]+)_/g, '<u>$1</u>');
+      // Replace _x_ with <u>x</u> only if it appears as a separate word to avoid breaking MathJax/LaTeX
+      return text.replace(/(^|\s)_([^_]+)_(?=\s|[.,:;!?]|$)/g, '$1<u>$2</u>');
     }
 
     function renderMathContent() {
@@ -1321,7 +1321,7 @@
       if (q.image_path) allImages.push({ image_path: q.image_path });
       allImages.push(...extraImages);
 
-      if (allImages.length > 0 && q.subject !== 'math') {
+      if (allImages.length > 0) {
         html += '<div class="q-images">';
         for (const img of allImages) {
           html += `<img class="q-image" src="/${escHtml(img.image_path)}" alt="Зображення до завдання" onclick="openLightbox('/${escHtml(img.image_path)}')">`;
