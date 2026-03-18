@@ -324,6 +324,24 @@
       font-size: 12px;
     }
 
+    .btn-freeze {
+      background: #c0392b;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .btn-freeze:hover { background: #922b21; }
+    .btn-freeze:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-unfreeze {
+      background: #27ae60;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .btn-unfreeze:hover { background: #1e8449; }
+    .btn-unfreeze:disabled { opacity: 0.5; cursor: not-allowed; }
+
     .form-row {
       display: flex;
       gap: 12px;
@@ -721,6 +739,20 @@
             <span class="toggle-label disabled" id="accessLabel">Тест ЗАКРИТО — учасники не можуть почати</span>
           </div>
           <p style="font-size:12px;color:#888;">Увімкніть перемикач, щоб дозволити учасникам розпочати тест.</p>
+        </div>
+
+        <!-- Air Raid Freeze -->
+        <div class="card" style="margin-bottom:20px;border-left:4px solid #e74c3c;">
+          <h3>🚨 Повітряна тривога — пауза тесту</h3>
+          <p style="font-size:13px;color:#555;margin:10px 0 16px;">
+            При оголошенні тривоги натисніть «Заморозити» — таймери всіх учасників зупиняться,
+            а на екрані з'явиться повідомлення про паузу. Після відбою натисніть «Розморозити» — тест продовжиться з того самого моменту.
+          </p>
+          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <button id="btnFreeze" class="btn btn-freeze" onclick="doFreeze()">🔴 Заморозити тест</button>
+            <button id="btnUnfreeze" class="btn btn-unfreeze" onclick="doUnfreeze()" style="display:none;">🟢 Розморозити тест</button>
+            <span id="freezeStatusLabel" style="font-size:13px;color:#888;"></span>
+          </div>
         </div>
 
         <div class="stats-grid">
@@ -1157,9 +1189,69 @@
       }
     }
 
+    // ─── Freeze / Unfreeze ────────────────────────────────────────────────────────
+    async function loadFreezeStatus() {
+      try {
+        const resp = await fetch('/api/exam/status', { credentials: 'include' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        applyFreezeUI(data.frozen);
+      } catch (e) {}
+    }
+
+    function applyFreezeUI(frozen) {
+      const btnFreeze = document.getElementById('btnFreeze');
+      const btnUnfreeze = document.getElementById('btnUnfreeze');
+      const label = document.getElementById('freezeStatusLabel');
+      if (frozen) {
+        btnFreeze.style.display = 'none';
+        btnUnfreeze.style.display = '';
+        label.textContent = '🔴 Тест ЗАМОРОЖЕНО — таймери зупинено у всіх учасників';
+        label.style.color = '#c0392b';
+        label.style.fontWeight = '600';
+      } else {
+        btnFreeze.style.display = '';
+        btnUnfreeze.style.display = 'none';
+        label.textContent = '🟢 Тест активний';
+        label.style.color = '#27ae60';
+        label.style.fontWeight = '600';
+      }
+    }
+
+    async function doFreeze() {
+      if (!confirm('Заморозити тест для всіх учасників? Їх таймери зупиняться.')) return;
+      const btn = document.getElementById('btnFreeze');
+      btn.disabled = true;
+      try {
+        const resp = await fetch('/api/admin/freeze', { method: 'POST', credentials: 'include' });
+        if (resp.ok) {
+          applyFreezeUI(true);
+        } else {
+          alert('Помилка заморозки');
+        }
+      } catch (e) { alert('Помилка з\'єднання'); }
+      btn.disabled = false;
+    }
+
+    async function doUnfreeze() {
+      if (!confirm('Розморозити тест? Таймери всіх учасників продовжаться з того самого моменту.')) return;
+      const btn = document.getElementById('btnUnfreeze');
+      btn.disabled = true;
+      try {
+        const resp = await fetch('/api/admin/unfreeze', { method: 'POST', credentials: 'include' });
+        if (resp.ok) {
+          applyFreezeUI(false);
+        } else {
+          alert('Помилка розморозки');
+        }
+      } catch (e) { alert('Помилка з\'єднання'); }
+      btn.disabled = false;
+    }
+
     // ─── Dashboard ────────────────────────────────────────────────────────────────
     async function loadDashboard() {
       loadTestAccess();
+      loadFreezeStatus();
 
       const [dashResp, partResp] = await Promise.all([
         fetch('/api/admin/dashboard', { credentials: 'include' }),

@@ -208,6 +208,43 @@ app.put('/api/admin/settings/access', requireAdmin, (req, res) => {
   );
 });
 
+// ─── Exam Freeze (Air Raid Pause) ─────────────────────────────────────────────
+
+app.get('/api/exam/status', requireParticipant, (req, res) => {
+  db.get(`SELECT value FROM settings WHERE key = 'exam_frozen'`, (err, row) => {
+    res.json({ frozen: row ? row.value === '1' : false });
+  });
+});
+
+app.post('/api/admin/freeze', requireAdmin, (req, res) => {
+  db.run(
+    `INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen', '1')`,
+    (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ ok: true, frozen: true });
+    }
+  );
+});
+
+app.post('/api/admin/unfreeze', requireAdmin, (req, res) => {
+  const totalSec = config.exam.duration_minutes * 60;
+  // Reset started_at for all active sessions so timer resumes from saved time_remaining_seconds
+  db.run(
+    `UPDATE exam_sessions SET started_at = CAST(? - (? - time_remaining_seconds) * 1000 AS INTEGER) WHERE status = 'active'`,
+    [Date.now(), totalSec],
+    (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      db.run(
+        `INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen', '0')`,
+        (err2) => {
+          if (err2) return res.status(500).json({ error: err2.message });
+          res.json({ ok: true, frozen: false });
+        }
+      );
+    }
+  );
+});
+
 // ─── Auth Routes ──────────────────────────────────────────────────────────────
 
 app.post('/api/login', (req, res) => {
