@@ -217,32 +217,41 @@ app.get('/api/exam/status', requireParticipant, (req, res) => {
 });
 
 app.post('/api/admin/freeze', requireAdmin, (req, res) => {
-  db.run(
-    `INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen', '1')`,
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ ok: true, frozen: true });
-    }
-  );
+  const frozenAt = Date.now();
+  db.serialize(() => {
+    db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen', '1')`);
+    db.run(
+      `INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen_at', ?)`,
+      [String(frozenAt)],
+      (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ ok: true, frozen: true });
+      }
+    );
+  });
 });
 
 app.post('/api/admin/unfreeze', requireAdmin, (req, res) => {
-  const totalSec = config.exam.duration_minutes * 60;
-  // Reset started_at for all active sessions so timer resumes from saved time_remaining_seconds
-  db.run(
-    `UPDATE exam_sessions SET started_at = CAST(? - (? - time_remaining_seconds) * 1000 AS INTEGER) WHERE status = 'active'`,
-    [Date.now(), totalSec],
-    (err) => {
-      if (err) return res.status(500).json({ error: err.message });
-      db.run(
-        `INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen', '0')`,
-        (err2) => {
-          if (err2) return res.status(500).json({ error: err2.message });
-          res.json({ ok: true, frozen: false });
-        }
-      );
-    }
-  );
+  db.get(`SELECT value FROM settings WHERE key = 'exam_frozen_at'`, (err, row) => {
+    const frozenAt = row ? parseInt(row.value) : Date.now();
+    const pausedMs = Date.now() - frozenAt;
+
+    // Shift started_at forward by the freeze duration — timer resumes from exact same moment
+    db.run(
+      `UPDATE exam_sessions SET started_at = CAST(started_at + ? AS INTEGER) WHERE status = 'active'`,
+      [pausedMs],
+      (err2) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+        db.serialize(() => {
+          db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('exam_frozen', '0')`);
+          db.run(`DELETE FROM settings WHERE key = 'exam_frozen_at'`, (err3) => {
+            if (err3) return res.status(500).json({ error: err3.message });
+            res.json({ ok: true, frozen: false });
+          });
+        });
+      }
+    );
+  });
 });
 
 // ─── Auth Routes ──────────────────────────────────────────────────────────────

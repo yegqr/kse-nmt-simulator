@@ -1285,17 +1285,9 @@
 
     function applyFreeze() {
       isFrozen = true;
-      // Stop timer counting
       clearInterval(timerInterval);
       timerInterval = null;
-      // Save current time immediately
-      fetch('/api/exam/ping', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, time_remaining_seconds: timeRemaining }),
-        credentials: 'include'
-      });
-      // Show overlay
+      // Show overlay with current time
       const h = Math.floor(timeRemaining / 3600);
       const m = Math.floor((timeRemaining % 3600) / 60);
       const s = timeRemaining % 60;
@@ -1306,18 +1298,15 @@
 
     async function applyUnfreeze() {
       isFrozen = false;
-      // Get fresh time from server (server has reset started_at)
+      // Server shifted started_at by freeze duration — fetch fresh remaining time
       try {
         const sessResp = await fetch('/api/exam/session', { credentials: 'include' });
         if (sessResp.ok) {
           const sess = await sessResp.json();
-          if (sess.time_remaining_seconds > 0) {
-            timeRemaining = sess.time_remaining_seconds;
-          }
+          timeRemaining = sess.time_remaining_seconds || timeRemaining;
         }
-      } catch (e) { /* keep local timeRemaining */ }
+      } catch (e) { /* keep local timeRemaining as fallback */ }
       document.getElementById('freezeOverlay').classList.remove('active');
-      // Restart timer from saved moment
       startTimer();
     }
 
