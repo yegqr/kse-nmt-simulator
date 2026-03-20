@@ -93,6 +93,7 @@ function init() {
     )`, () => {
       db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('test_access_enabled', '0')`);
       seedIfEmpty();
+      seedParticipantsIfEmpty();
     });
   });
 }
@@ -551,6 +552,43 @@ function seedQuestions() {
       stmt.finalize();
       console.log('Seeded 52 questions (30 Ukrainian + 22 Math, real NMT format).');
     });
+  });
+}
+
+const PREFERRED_PARTICIPANTS_CSV = path.join(__dirname, 'participants_kse.csv');
+
+function seedParticipantsIfEmpty() {
+  db.get('SELECT COUNT(*) as cnt FROM participants', (err, row) => {
+    if (err) return;
+    if (row.cnt === 0 && fs.existsSync(PREFERRED_PARTICIPANTS_CSV)) {
+      console.log('Seeding participants from CSV...');
+      const content = fs.readFileSync(PREFERRED_PARTICIPANTS_CSV, 'utf-8');
+      const lines = content.split('\\n').map(l => l.trim()).filter(Boolean);
+      const dataLines = lines[0].toLowerCase().includes('login') ? lines.slice(1) : lines;
+      
+      const stmt = db.prepare(`INSERT OR IGNORE INTO participants (login, password, full_name, seat_number) VALUES (?, ?, ?, ?)`);
+      let count = 0;
+      for (const line of dataLines) {
+        const delim = line.includes(';') ? ';' : ',';
+        const arr = [];
+        let quote = false;
+        for (let col = 0, c = 0; c < line.length; c++) {
+          let cc = line[c], nc = line[c+1];
+          arr[col] = arr[col] || '';
+          if (cc === '"' && quote && nc === '"') { arr[col] += cc; ++c; continue; }
+          if (cc === '"') { quote = !quote; continue; }
+          if (cc === delim && !quote) { ++col; continue; }
+          arr[col] += cc;
+        }
+        const parts = arr.map(s => s.trim());
+        if (parts.length < 3) continue;
+        const [login, password, full_name, seat_number] = parts;
+        if (!login) continue;
+        stmt.run(login, password, full_name, seat_number || null);
+        count++;
+      }
+      stmt.finalize(() => console.log('Seeded ' + count + ' participants from CSV.'));
+    }
   });
 }
 
