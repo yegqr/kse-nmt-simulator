@@ -937,6 +937,7 @@
       <!-- Sub tabs -->
       <div class="sub-tabs">
         <span class="sub-tab active" data-panel="examPanel" onclick="switchSubTab(this)">Іспит</span>
+        <span class="sub-tab" id="refTab" data-panel="ukrRefPanel" onclick="switchSubTab(this)">Довідкові матеріали</span>
         <span class="sub-tab" data-panel="instructionPanel" onclick="switchSubTab(this)">Інструкція</span>
       </div>
 
@@ -1338,6 +1339,8 @@
       currentQIndex = 0;
       document.getElementById('subUkr').classList.toggle('active', subject === 'ukrainian');
       document.getElementById('subMath').classList.toggle('active', subject === 'math');
+      const refTab = document.getElementById('refTab');
+      if (refTab) refTab.dataset.panel = subject === 'math' ? 'mathRefPanel' : 'ukrRefPanel';
       renderQuestion();
       renderGrid();
     }
@@ -1387,6 +1390,10 @@
           currentQIndex = i;
           document.getElementById('subUkr').classList.toggle('active', q.subject === 'ukrainian');
           document.getElementById('subMath').classList.toggle('active', q.subject === 'math');
+          
+          const refTab = document.getElementById('refTab');
+          if (refTab) refTab.dataset.panel = q.subject === 'math' ? 'mathRefPanel' : 'ukrRefPanel';
+          
           const activeSubTab = document.querySelector('.sub-tab.active');
           if (activeSubTab && activeSubTab.dataset.panel !== 'examPanel') {
             switchSubTab(document.querySelector('.sub-tab[data-panel="examPanel"]'));
