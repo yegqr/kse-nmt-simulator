@@ -611,13 +611,29 @@ app.post('/api/admin/participants/import', requireAdmin, csvUpload.single('file'
   const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
   const dataLines = lines[0].toLowerCase().includes('login') ? lines.slice(1) : lines;
 
+  function parseCSVLine(str) {
+    const delim = str.includes(';') ? ';' : ',';
+    const arr = [];
+    let quote = false;
+    for (let col = 0, c = 0; c < str.length; c++) {
+      let cc = str[c], nc = str[c+1];
+      arr[col] = arr[col] || '';
+      if (cc === '"' && quote && nc === '"') { arr[col] += cc; ++c; continue; }
+      if (cc === '"') { quote = !quote; continue; }
+      if (cc === delim && !quote) { ++col; continue; }
+      arr[col] += cc;
+    }
+    return arr.map(s => s.trim());
+  }
+
   const stmt = db.prepare(`INSERT OR IGNORE INTO participants (login, password, full_name, seat_number) VALUES (?, ?, ?, ?)`);
   let count = 0;
 
   for (const line of dataLines) {
-    const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+    const parts = parseCSVLine(line);
     if (parts.length < 3) continue;
     const [login, password, full_name, seat_number] = parts;
+    if (!login) continue;
     stmt.run(login, password, full_name, seat_number || null);
     count++;
   }
