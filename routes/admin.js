@@ -285,34 +285,91 @@ router.get('/logs', requireAdmin, (req, res) => {
 });
 
 // ─── Export CSV ────────────────────────────────────────────────────────────────
+// Includes ALL participants and ALL their sessions (finished + in-progress + never started).
+// Before export, expired active sessions are auto-finished synchronously via the same
+// sweep logic used by the background job.
 
 router.get('/export/csv', requireAdmin, (req, res) => {
+  const config = require('../config.json');
+  const { calculateScore } = require('../utils/scoring');
+  const cutoff = Date.now() - config.exam.duration_minutes * 60 * 1000;
+
+  // Step 1: find expired-but-still-active sessions and finalize them first
   db.all(
-    `SELECT p.full_name, p.login, p.seat_number, es.started_at, es.finished_at,
-       es.score_ukrainian, es.score_math,
-       (COALESCE(es.score_ukrainian,0) + COALESCE(es.score_math,0)) as total
-     FROM participants p
-     LEFT JOIN exam_sessions es ON es.participant_id = p.id AND es.status = 'finished'
-     ORDER BY p.seat_number`,
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: err.message });
+    `SELECT * FROM exam_sessions WHERE status = 'active' AND CAST(started_at AS INTEGER) <= ?`,
+    [cutoff],
+    (sweepErr, expiredSessions) => {
+      if (sweepErr) console.error('[export sweep] DB error:', sweepErr.message);
 
-      const fmtTs = (ts) => {
-        if (!ts) return '';
-        const d = new Date(isNaN(ts) ? ts : parseInt(ts));
-        return d.toLocaleString('uk-UA');
-      };
+      const pending = (expiredSessions || []).length;
+      if (pending === 0) return doExport();
 
-      let csv = 'ПІБ,Логін,Місце,Початок,Кінець,Бали укр,Бали мат,Загальний\n';
-      for (const r of rows) {
-        csv += `"${r.full_name || ''}","${r.login || ''}","${r.seat_number || ''}","${fmtTs(r.started_at)}","${fmtTs(r.finished_at)}","${r.score_ukrainian ?? ''}","${r.score_math ?? ''}","${r.total ?? ''}"\n`;
+      let done = 0;
+      for (const s of expiredSessions) {
+        db.run(
+          `UPDATE exam_sessions SET status = 'finishing' WHERE id = ? AND status = 'active'`,
+          [s.id],
+          function (err2) {
+            if (err2 || this.changes === 0) { if (++done === pending) doExport(); return; }
+            db.all(`SELECT id, subject, type, correct_answer, options, match_right, points FROM questions`, (e1, questions) => {
+              db.all(`SELECT question_id, answer FROM answers WHERE session_id = ?`, [s.id], (e2, answerRows) => {
+                const answerMap = {};
+                for (const a of (answerRows || [])) {
+                  try { answerMap[a.question_id] = JSON.parse(a.answer); } catch { answerMap[a.question_id] = a.answer; }
+                }
+                const { scoreUkr, scoreMath } = calculateScore(questions || [], answerMap);
+                db.run(
+                  `UPDATE exam_sessions SET status = 'finished', finished_at = ?, score_ukrainian = ?, score_math = ? WHERE id = ?`,
+                  [Date.now(), scoreUkr, scoreMath, s.id],
+                  () => { if (++done === pending) doExport(); }
+                );
+              });
+            });
+          }
+        );
       }
-
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      res.setHeader('Content-Disposition', 'attachment; filename="results.csv"');
-      res.send('\uFEFF' + csv);
     }
   );
+
+  function doExport() {
+    db.all(
+      `SELECT p.full_name, p.login, p.seat_number,
+         es.id as session_id, es.status, es.started_at, es.finished_at,
+         es.score_ukrainian, es.score_math,
+         (COALESCE(es.score_ukrainian, 0) + COALESCE(es.score_math, 0)) as total,
+         (SELECT COUNT(*) FROM answers WHERE session_id = es.id) as answers_count
+       FROM participants p
+       LEFT JOIN exam_sessions es ON es.participant_id = p.id
+       ORDER BY p.seat_number ASC, es.started_at DESC`,
+      (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const fmtTs = (ts) => {
+          if (!ts) return '';
+          const d = new Date(isNaN(ts) ? ts : parseInt(ts));
+          return d.toLocaleString('uk-UA');
+        };
+
+        const statusLabel = (s) => {
+          if (!s) return 'Не починав(ла)';
+          if (s === 'finished') return 'Завершено';
+          if (s === 'active') return 'В процесі';
+          if (s === 'finishing') return 'Обробляється';
+          return s;
+        };
+
+        let csv = 'ПІБ,Логін,Місце,Статус,Початок,Кінець,Відповідей,Бали укр,Бали мат,Загальний\n';
+        for (const r of rows) {
+          csv += `"${r.full_name || ''}","${r.login || ''}","${r.seat_number || ''}","${statusLabel(r.status)}","${fmtTs(r.started_at)}","${fmtTs(r.finished_at)}","${r.answers_count ?? 0}","${r.score_ukrainian ?? ''}","${r.score_math ?? ''}","${r.status === 'finished' ? (r.total ?? '') : ''}"\n`;
+        }
+
+        const now = new Date().toISOString().slice(0, 10);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="results_all_${now}.csv"`);
+        res.send('\uFEFF' + csv);
+      }
+    );
+  }
 });
 
 // ─── Questions Export/Import ────────────────────────────────────────────────────

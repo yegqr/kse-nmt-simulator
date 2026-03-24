@@ -249,7 +249,7 @@ router.post('/answer', requireParticipant, (req, res) => {
             [session_id, question_id, JSON.stringify(answer), Date.now(), time_spent_seconds || 0],
             (err2) => {
               if (err2) return res.status(500).json({ error: err2.message });
-              logEvent(session_id, p.id, 'answer_save', { question_id, answer });
+              logEvent(session_id, p.id, 'answer_save', { question_id, answer, time_spent_seconds: time_spent_seconds || 0 });
               res.json({ ok: true });
             }
           );

@@ -145,6 +145,55 @@ app.use((err, req, res, next) => {
 
 init();
 
+// ─── Background sweep: auto-finish expired active sessions ────────────────────
+// Runs every 5 minutes. Catches participants who closed browser without finishing.
+function sweepExpiredSessions() {
+  const config = require('./config.json');
+  const { calculateScore } = require('./utils/scoring');
+  const cutoff = Date.now() - config.exam.duration_minutes * 60 * 1000;
+
+  db.all(
+    `SELECT * FROM exam_sessions WHERE status = 'active' AND CAST(started_at AS INTEGER) <= ?`,
+    [cutoff],
+    (err, sessions) => {
+      if (err) return console.error('[sweep] DB error:', err.message);
+      if (!sessions || sessions.length === 0) return;
+
+      for (const s of sessions) {
+        db.run(
+          `UPDATE exam_sessions SET status = 'finishing' WHERE id = ? AND status = 'active'`,
+          [s.id],
+          function (err2) {
+            if (err2 || this.changes === 0) return;
+
+            db.all(`SELECT id, subject, type, correct_answer, options, match_right, points FROM questions`, (e1, questions) => {
+              db.all(`SELECT question_id, answer FROM answers WHERE session_id = ?`, [s.id], (e2, answerRows) => {
+                const answerMap = {};
+                for (const a of (answerRows || [])) {
+                  try { answerMap[a.question_id] = JSON.parse(a.answer); }
+                  catch { answerMap[a.question_id] = a.answer; }
+                }
+                const { scoreUkr, scoreMath } = calculateScore(questions || [], answerMap);
+                db.run(
+                  `UPDATE exam_sessions SET status = 'finished', finished_at = ?, score_ukrainian = ?, score_math = ? WHERE id = ?`,
+                  [Date.now(), scoreUkr, scoreMath, s.id],
+                  () => {
+                    console.log(`[sweep] Auto-finished session ${s.id} (participant ${s.participant_id}, ukr=${scoreUkr}, math=${scoreMath})`);
+                  }
+                );
+              });
+            });
+          }
+        );
+      }
+    }
+  );
+}
+
+// Run once at startup (after a short delay so DB init completes), then every 5 min
+setTimeout(sweepExpiredSessions, 10_000);
+setInterval(sweepExpiredSessions, 5 * 60 * 1000);
+
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
