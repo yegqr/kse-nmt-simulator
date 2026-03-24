@@ -105,7 +105,7 @@ echo -e "  ${CYAN}Синхронізую код → $REMOTE_APP_DIR${NC}"
 echo -e "  ${GREEN}БД у $REMOTE_DATA_DIR — недоторкана${NC}"
 echo ""
 
-rsync -az --info=progress2 \
+rsync -az --progress \
   --exclude 'node_modules/' \
   --exclude '.env' \
   --exclude 'data/' \
