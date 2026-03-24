@@ -5,6 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KSE НМТ — Адміністратор</title>
+  <!-- KaTeX for question math rendering in results view -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="if(typeof adminRenderMath==='function') adminRenderMath()"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -1090,6 +1096,23 @@
     let allParticipants = [];
     let allQuestions = [];
 
+    // ─── Math rendering helper ────────────────────────────────────────────────────
+    function adminRenderMath() {
+      if (typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(document.body, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true }
+            ],
+            throwOnError: false
+          });
+        } catch (e) {}
+      }
+    }
+
     // ─── Admin Login ──────────────────────────────────────────────────────────────
     async function checkAdminAuth() {
       const resp = await fetch('/api/admin/participants', { credentials: 'include' });
@@ -1412,6 +1435,7 @@
       }
       html += '</tbody></table>';
       document.getElementById('detailContent').innerHTML = html;
+      adminRenderMath();
     }
 
     // ─── Questions ────────────────────────────────────────────────────────────────

@@ -3,11 +3,11 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>KSE НМТ — Екзамен</title>
   <!-- KaTeX for Math Rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
     onload="renderMathContent()"></script>
@@ -945,7 +945,6 @@
       <div id="examPanel">
         <div class="breadcrumb">
           <span>Іспит &rsaquo; KSE-НМТ-2026 &rsaquo; KSE-НМТ-2026</span>
-          <button class="fullscreen-btn" onclick="toggleFullscreen()" title="Повноекранний режим">⛶</button>
         </div>
 
         <div class="subject-tabs">
@@ -1064,18 +1063,84 @@
       return text.replace(/_([^_]+)_/g, '<u>$1</u>');
     }
 
-    function renderMathContent() {
+    // el: optional DOM element to scope rendering — avoids scanning the entire page
+    function renderMathContent(el) {
       if (typeof renderMathInElement === 'function') {
-        renderMathInElement(document.body, {
-          delimiters: [
-            { left: '$$', right: '$$', display: true },
-            { left: '$', right: '$', display: false },
-            { left: '\\(', right: '\\)', display: false },
-            { left: '\\[', right: '\\]', display: true }
-          ],
-          throwOnError: false
-        });
+        try {
+          renderMathInElement(el || document.body, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true },
+              { left: '$', right: '$', display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true }
+            ],
+            throwOnError: false,
+            ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'annotation', 'annotation-xml']
+          });
+        } catch (e) {
+          console.warn('[KaTeX] renderMathInElement error:', e);
+        }
       }
+    }
+
+    /**
+     * Renders text with both Markdown and LaTeX.
+     * Protects math delimiters from being mangled by marked.js before rendering.
+     */
+    function renderContent(text, subject) {
+      if (!text) return '';
+
+      // Apply NMT-specific formatting (underline syntax)
+      let processed = formatNmtText(text, subject);
+
+      // Step 1: Extract math blocks before markdown processes them
+      const mathBlocks = [];
+
+      // $$...$$ display math
+      processed = processed.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
+        mathBlocks.push({ type: 'display', math });
+        return `\x01MATH${mathBlocks.length - 1}\x01`;
+      });
+
+      // $...$ inline math (no newlines inside)
+      processed = processed.replace(/\$([^$\n]+?)\$/g, (_, math) => {
+        mathBlocks.push({ type: 'inline', math });
+        return `\x01MATH${mathBlocks.length - 1}\x01`;
+      });
+
+      // \[...\] display math
+      processed = processed.replace(/\\\[([\s\S]+?)\\\]/g, (_, math) => {
+        mathBlocks.push({ type: 'display', math });
+        return `\x01MATH${mathBlocks.length - 1}\x01`;
+      });
+
+      // \(...\) inline math
+      processed = processed.replace(/\\\(([\s\S]+?)\\\)/g, (_, math) => {
+        mathBlocks.push({ type: 'inline', math });
+        return `\x01MATH${mathBlocks.length - 1}\x01`;
+      });
+
+      // Step 2: Apply Markdown
+      if (typeof marked !== 'undefined') {
+        processed = marked.parse(processed);
+      }
+
+      // Step 3: Restore math blocks — rendered inline or as placeholders for auto-render
+      processed = processed.replace(/\x01MATH(\d+)\x01/g, (_, idxStr) => {
+        const { type, math } = mathBlocks[parseInt(idxStr)];
+        // Prefer katex.renderToString if available (avoids needing DOM re-scan)
+        if (typeof katex !== 'undefined') {
+          try {
+            return katex.renderToString(math, { displayMode: type === 'display', throwOnError: false });
+          } catch (e) {
+            // fall through to placeholder
+          }
+        }
+        // Fallback: restore as raw LaTeX delimiters for auto-render
+        return type === 'display' ? `$$${math}$$` : `$${math}$`;
+      });
+
+      return processed;
     }
 
     // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -1167,7 +1232,7 @@
             html += '<div class="ref-image-item">';
             if (m.title) html += `<div class="ref-img-title">${escHtml(m.title)}</div>`;
             if (m.image_path) {
-              html += `<img src="/${escHtml(m.image_path)}" alt="${escHtml(m.title || '')}" onclick="openLightbox('/${escHtml(m.image_path)}')">  `;
+              html += `<img src="/${escHtml(m.image_path)}" alt="${escHtml(m.title || '')}" onclick="openLightbox('/${escHtml(m.image_path)}')" onerror="this.alt='[Зображення недоступне]';this.style.cssText='border:1px solid #ccc;padding:8px;background:#f8f8f8;font-size:12px;display:block'">  `;
             }
             html += '</div>';
           }
@@ -1176,7 +1241,7 @@
 
         content.innerHTML = html;
         ukrRefLoaded = true;
-        renderMathContent();
+        renderMathContent(content);
       } catch (e) {
         content.innerHTML = '<p style="color:#123961;">Помилка завантаження матеріалів</p>';
       }
@@ -1195,14 +1260,14 @@
           for (const m of materials) {
             html += '<div class="ref-image-item">';
             if (m.image_path) {
-              html += `<img src="/${escHtml(m.image_path)}" alt="" onclick="openLightbox('/${escHtml(m.image_path)}')" style="max-width:100%;display:block;cursor:zoom-in;">`;
+              html += `<img src="/${escHtml(m.image_path)}" alt="" onclick="openLightbox('/${escHtml(m.image_path)}')" style="max-width:100%;display:block;cursor:zoom-in;" onerror="this.alt='[Зображення недоступне]';this.style.cssText='border:1px solid #ccc;padding:8px;background:#f8f8f8;font-size:12px;display:block'">`;
             }
             html += '</div>';
           }
           content.innerHTML = html;
         }
         mathRefLoaded = true;
-        renderMathContent();
+        renderMathContent(content);
       } catch (e) {
         content.innerHTML = '<p style="color:#c0392b;padding:16px;">Помилка завантаження</p>';
       }
@@ -1246,14 +1311,29 @@
 
     // ─── Ping ─────────────────────────────────────────────────────────────────────
     function startPing() {
-      pingInterval = setInterval(() => {
-        fetch('/api/exam/ping', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: sessionId, time_remaining_seconds: timeRemaining }),
-          credentials: 'include'
-        });
-      }, 60000);
+      // Jitter 0-8s prevents all 30 clients from hitting the server simultaneously
+      const jitter = Math.random() * 8000;
+      pingInterval = setInterval(async () => {
+        try {
+          const resp = await fetch('/api/exam/ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId }),
+            credentials: 'include'
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            // Sync client timer with authoritative server time (prevents drift)
+            if (data.time_remaining_seconds !== undefined && !isFrozen) {
+              const diff = Math.abs(timeRemaining - data.time_remaining_seconds);
+              if (diff > 30) { // Correct if drift > 30 seconds
+                timeRemaining = data.time_remaining_seconds;
+              }
+            }
+            if (data.expired) autoFinish();
+          }
+        } catch (_) {}
+      }, 60000 + jitter);
     }
 
     // ─── Freeze Polling ───────────────────────────────────────────────────────────
@@ -1263,7 +1343,9 @@
 
     function startFreezePolling() {
       if (isAdmin) return; // Admins are not affected
-      freezeInterval = setInterval(checkFreezeStatus, 4000);
+      // Jitter 0-2s spreads 30 clients' freeze checks across the interval
+      const jitter = Math.random() * 2000;
+      freezeInterval = setInterval(checkFreezeStatus, 4000 + jitter);
     }
 
     async function checkFreezeStatus() {
@@ -1440,8 +1522,7 @@
       let html = '';
 
       if (q.instruction) {
-        // Use marked for markdown support
-        html += `<div class="q-instruction">${typeof marked !== 'undefined' ? marked.parse(q.instruction) : escHtml(q.instruction)}</div>`;
+        html += `<div class="q-instruction">${renderContent(q.instruction, q.subject)}</div>`;
       }
 
       // Images (legacy single + multiple)
@@ -1453,7 +1534,7 @@
       if (allImages.length > 0) {
         html += '<div class="q-images">';
         for (const img of allImages) {
-          html += `<img class="q-image" src="/${escHtml(img.image_path)}" alt="Зображення до завдання" onclick="openLightbox('/${escHtml(img.image_path)}')">`;
+          html += `<img class="q-image" src="/${escHtml(img.image_path)}" alt="Зображення до завдання" onclick="openLightbox('/${escHtml(img.image_path)}')" onerror="this.alt='[Зображення недоступне]';this.style.cssText='border:1px solid #ccc;padding:8px;background:#f8f8f8;font-size:12px;display:block'">`;
         }
         html += '</div>';
       }
@@ -1462,8 +1543,7 @@
       if (q.subject === 'math') {
         textToRender = textToRender.replace(/\(див\. рисунок\)|\(рисунок\)|\(див\. рис\.\)/gi, '').trim();
       }
-      const qTextHtml = typeof marked !== 'undefined' ? marked.parse(formatNmtText(textToRender, q.subject)) : formatNmtText(textToRender, q.subject);
-      html += `<div class="q-text">${qTextHtml}</div>`;
+      html += `<div class="q-text">${renderContent(textToRender, q.subject)}</div>`;
 
       if (q.type === 'single') html += renderSingle(q);
       else if (q.type === 'multiple') html += renderMultiple(q);
@@ -1488,9 +1568,10 @@
       <button class="q-nav-btn" onclick="navigate(1)" ${currentQIndex === subjectQs.length - 1 ? 'disabled' : ''}>Наступне &#8594;</button>
     </div>`;
 
-      document.getElementById('questionArea').innerHTML = `<div class="question-card">${html}</div>`;
+      const questionArea = document.getElementById('questionArea');
+      questionArea.innerHTML = `<div class="question-card">${html}</div>`;
       restoreAnswerState(q);
-      renderMathContent();
+      renderMathContent(questionArea);
     }
 
     function renderSingle(q) {
@@ -1502,7 +1583,7 @@
       <li>
         <label id="lbl-${i}" onclick="selectSingle(${q.id}, '${letter}', ${i})">
           <input type="radio" name="q${q.id}" value="${letter}">
-          <span>${formatNmtText(opt, q.subject)}</span>
+          <span>${renderContent(opt, q.subject)}</span>
         </label>
       </li>`;
       });
@@ -1520,7 +1601,7 @@
       <li>
         <label id="lbl-${i}" onclick="toggleMultiple(${q.id}, '${letter}', ${i})">
           <input type="checkbox" name="q${q.id}" value="${letter}">
-          <span>${formatNmtText(opt, q.subject)}</span>
+          <span>${renderContent(opt, q.subject)}</span>
         </label>
       </li>`;
       });
@@ -1647,7 +1728,7 @@
 
       html += '<div class="match-col"><h4>Ліворуч</h4>';
       left.forEach((item) => {
-        html += `<div class="match-left-item">${escHtml(item)}</div>`;
+        html += `<div class="match-left-item">${renderContent(item, q.subject)}</div>`;
       });
       html += '</div>';
 
@@ -1665,7 +1746,7 @@
            ondragleave="onSlotDragLeave(this)"
            ondrop="onSlotDrop(event, ${q.id}, '${key}')"
            style="cursor: pointer;">
-        <span>${rightText ? escHtml(rightText) : '<span style="color:#bbb">—</span>'}</span>
+        <span>${rightText ? renderContent(rightText, q.subject) : '<span style="color:#bbb">—</span>'}</span>
         ${assignedLetter ? `<button class="match-remove" onclick="event.stopPropagation(); removeMatch(${q.id}, '${key}')">✕</button>` : ''}
       </div>`;
       });
@@ -1683,7 +1764,7 @@
           draggable="${isUsed ? 'false' : 'true'}"
           ondragstart="onMatchDragStart(event, ${q.id}, '${optObj.letter}')"
           ondragend="onMatchDragEnd(event)"
-          onclick="selectMatchOption(${q.id}, '${optObj.letter}')">${escHtml(optObj.text)}</button>`;
+          onclick="selectMatchOption(${q.id}, '${optObj.letter}')">${renderContent(optObj.text, q.subject)}</button>`;
       });
       html += '</div></div></div>';
 
@@ -1805,84 +1886,28 @@
       }
     }
 
-    // ─── Security Script (Safe Exam Browser Mode) ─────────────────────────────────
+    // ─── Security (SEB-compatible — no forced fullscreen) ─────────────────────────
+
     function logViolation(eventType) {
       if (!sessionId || isAdmin) return;
       fetch('/api/exam/violation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          eventType,
-          timestamp: Date.now(),
-          session_id: sessionId
-        }),
+        body: JSON.stringify({ eventType, timestamp: Date.now(), session_id: sessionId }),
         credentials: 'include'
-      }).catch(e => console.error('Violation log error:', e));
+      }).catch(() => {});
     }
 
-    function enterFullscreen() {
-      const doc = document.documentElement;
-      try {
-        if (doc.requestFullscreen) doc.requestFullscreen().catch(() => {});
-        else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
-        else if (doc.mozRequestFullScreen) doc.mozRequestFullScreen();
-        else if (doc.msRequestFullscreen) doc.msRequestFullscreen();
-      } catch(e) {}
-    }
-
-    // FR-1. Forced Fullscreen & Exit Detection
-    document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement && !isAdmin) {
-        alert('Порушення! Ви вийшли з повноекранного режиму. Будь ласка, поверніться назад.');
-        logViolation('fullscreen_exit');
-        enterFullscreen();
-      }
-    });
-
-    // FR-2. Detection of Tab/Window Switch
+    // Tab/window switch detection (log only — SEB handles locking)
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden && !isAdmin) {
-        logViolation('tab_switch');
-      }
+      if (document.hidden && !isAdmin) logViolation('tab_switch');
     });
 
-    // FR-3 & FR-4. Block Clipboard & Context Menu
+    // Block copy/paste/cut (logged for monitoring)
     document.addEventListener('copy', (e) => { if (!isAdmin) { e.preventDefault(); logViolation('copy_attempt'); } });
     document.addEventListener('paste', (e) => { if (!isAdmin) { e.preventDefault(); logViolation('paste_attempt'); } });
     document.addEventListener('cut', (e) => { if (!isAdmin) { e.preventDefault(); logViolation('cut_attempt'); } });
     document.addEventListener('contextmenu', (e) => { if (!isAdmin) e.preventDefault(); });
-
-    // FR-5. Restricted Shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (isAdmin) return;
-      const forbiddenKeys = ['F12'];
-      const ctrlCmd = e.ctrlKey || e.metaKey;
-      
-      if (forbiddenKeys.includes(e.key)) {
-        e.preventDefault();
-        logViolation('shortcut_forbidden_' + e.key);
-        return false;
-      }
-      
-      if (ctrlCmd) {
-        const forbiddenShortcuts = ['c', 'v', 'u', 's', 'a', 'p'];
-        if (forbiddenShortcuts.includes(e.key.toLowerCase())) {
-          e.preventDefault();
-          logViolation('shortcut_forbidden_ctrl+' + e.key);
-          return false;
-        }
-      }
-    });
-
-    // Auto-enter fullscreen on first click
-    document.addEventListener('click', () => {
-      if (!document.fullscreenElement && !isAdmin) enterFullscreen();
-    }, { once: false });
-
-    // Initialize security on page load
-    window.addEventListener('load', () => {
-      setTimeout(enterFullscreen, 1000);
-    });
 
     // ─── Navigation ───────────────────────────────────────────────────────────────
     function navigate(dir) {
@@ -1951,11 +1976,6 @@
     }
 
     // ─── Misc ─────────────────────────────────────────────────────────────────────
-    function toggleFullscreen() {
-      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => { });
-      else document.exitFullscreen();
-    }
-
     function escHtml(str) {
       if (!str) return '';
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');

@@ -7,7 +7,7 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const DB_PATH = path.join(__dirname, 'exam.db');
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'exam.db');
 const db = new sqlite3.Database(DB_PATH);
 
 function init() {
@@ -90,8 +90,18 @@ function init() {
     db.run(`CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
-    )`, () => {
-      db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('test_access_enabled', '0')`);
+    )`);
+
+    // ─── Indexes ──────────────────────────────────────────────────────────────
+    db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_participant ON exam_sessions(participant_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_status ON exam_sessions(status)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON exam_sessions(started_at)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_answers_session ON answers(session_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_answers_question ON answers(question_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_event_log_session ON event_log(session_id)`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_participants_login ON participants(login)`);
+
+    db.run(`INSERT OR IGNORE INTO settings (key, value) VALUES ('test_access_enabled', '0')`, () => {
       seedIfEmpty();
       seedParticipantsIfEmpty();
     });

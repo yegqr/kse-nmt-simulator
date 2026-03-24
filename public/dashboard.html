@@ -402,6 +402,7 @@
   <nav class="tabs-nav">
     <a class="tab-item active" href="#" data-tab="exam">Іспит</a>
     <a class="tab-item" href="#" data-tab="math">Математика: довідкові матеріали</a>
+    <a class="tab-item" href="#" data-tab="ukr">Укр. мова: довідкові матеріали</a>
     <a class="tab-item" href="#" data-tab="instruction">Інструкція</a>
   </nav>
 
@@ -436,7 +437,7 @@
           </div>
           <div class="accordion-item" style="margin-left: 28px;">
             <span class="clock-icon">🕐</span>
-            <span>Тест з обмеженим часом <strong>120 хвилин</strong></span>
+            <span>Тест з обмеженим часом <strong id="examDuration">120 хвилин</strong></span>
           </div>
           <div class="accordion-item" style="margin-left: 28px;">
             <span>📝</span>
@@ -479,7 +480,7 @@
           <li>Тест складається з 2 блоків, зараз ви вирішуєте 1 блок: <strong>Українська мова</strong> (30 завдань) і
             <strong>Математика</strong> (22 завдання).
           </li>
-          <li>Загальний час виконання: <strong>120 хвилин</strong>. Таймер відображається у правому верхньому куті
+          <li>Загальний час виконання: <strong id="examDurationInstruction">120 хвилин</strong>. Таймер відображається у правому верхньому куті
             екрана.</li>
           <li>Для завдань з одиничним вибором оберіть одну правильну відповідь.</li>
           <li>Для завдань з множинним вибором оберіть усі правильні відповіді.</li>
@@ -550,6 +551,20 @@
         participant = data.participant;
         const isAdmin = !!data.is_admin;
         document.getElementById('userName').textContent = participant.full_name;
+
+        // Load exam config (title, duration)
+        const cfgResp = await fetch('/api/exam/config', { credentials: 'include' });
+        if (cfgResp.ok) {
+          const cfg = await cfgResp.json();
+          if (cfg.title) document.getElementById('examTitle').textContent = cfg.title;
+          if (cfg.duration_minutes) {
+            const durText = cfg.duration_minutes + ' хвилин';
+            const el1 = document.getElementById('examDuration');
+            const el2 = document.getElementById('examDurationInstruction');
+            if (el1) el1.textContent = durText;
+            if (el2) el2.textContent = durText;
+          }
+        }
 
         // Check test access
         const settingsResp = await fetch('/api/settings', { credentials: 'include' });
